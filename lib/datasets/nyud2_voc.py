@@ -150,7 +150,7 @@ class nyud2_voc(datasets.imdb):
         for i in xrange(len(self._image_index)):
             ind = np.where(self._image_index[i] == np.array(imnames))[0]
             assert(len(ind) == 1)
-            box_list.append(boxes[i][:, (1, 0, 3, 2)] - 1)
+            box_list.append(boxes[ind[0]][:, (1, 0, 3, 2)] - 1)
 
         return self.create_roidb_from_box_list(box_list, gt_roidb)
 
@@ -223,6 +223,7 @@ class nyud2_voc(datasets.imdb):
               f.write(ap_str + '\n')
               print ap_str
           ap_str = '{:20s}:{:10f}'.format('mean', np.mean(ap[1:])*100)
+          f.write(ap_str + '\n')
           print ap_str
 
       eval_file = os.path.join(output_dir, 'eval' + det_salt + eval_salt + '.pkl')
