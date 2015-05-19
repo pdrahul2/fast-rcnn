@@ -5,6 +5,8 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
+import python_utils.evaluate_detection as eval
+import python_utils.sg_utils as sg_utils
 import datasets
 import datasets.nyud2_voc
 import os
@@ -186,10 +188,51 @@ class nyud2_voc(datasets.imdb):
                 'gt_classes': gt_classes,
                 'gt_overlaps' : overlaps,
                 'flipped' : False}
+    
+    def evaluate_detections(self, all_boxes, output_dir, det_salt = '', eval_salt = '', overlap_thresh = 0.5):
+      num_classes = self.num_classes
+      num_images = self.num_images
+      gt_roidb = self.gt_roidb()
+      ap = [[]]; prec = [[]]; rec = [[]]
+      ap_file = os.path.join(output_dir, 'eval' + det_salt + eval_salt + '.txt')
+      with open(ap_file, 'wt') as f:
+          for i in xrange(1, self.num_classes):
+              dt = []; gt = [];
+              # Prepare the output
+              for j in xrange(0,num_images):
+                  bs = all_boxes[i][j]
+                  if len(bs) == 0:
+                    bb = np.zeros((0,4)).astype(np.float32)
+                    sc = np.zeros((0,1)).astype(np.float32)
+                  else:
+                    bb = bs[:,:4].reshape(bs.shape[0],4)
+                    sc = bs[:,4].reshape(bs.shape[0],1)
+                  dtI = dict({'sc': sc, 'boxInfo': bb})
+                  dt.append(dtI)
+          
+              # Prepare the annotations
+              for j in xrange(0,num_images):
+                  cls_ind = np.where(gt_roidb[j]['gt_classes'] == i)[0]
+                  bb = gt_roidb[j]['boxes'][cls_ind,:]
+                  diff = np.zeros((len(cls_ind),1)).astype(np.bool)
+                  gt.append(dict({'diff': diff, 'boxInfo': bb}))
+              bOpts = dict({'minoverlap': overlap_thresh})
+              ap_i, rec_i, prec_i = eval.inst_image(dt, gt, bOpts)
+              ap.append(ap_i[0]); prec.append(prec_i); rec.append(rec_i)
+              ap_str = '{:20s}:{:10f}'.format(self.classes[i], ap_i[0]*100)
+              f.write(ap_str + '\n')
+              print ap_str
+          ap_str = '{:20s}:{:10f}'.format('mean', np.mean(ap[1:])*100)
+          print ap_str
 
-    def evaluate_detections(self, all_boxes, output_dir):
-        comp_id = self._write_voc_results_file(all_boxes)
-        self._do_matlab_eval(comp_id, output_dir)
+      eval_file = os.path.join(output_dir, 'eval' + det_salt + eval_salt + '.pkl')
+      sg_utils.save_variables(eval_file, [ap, prec, rec, self._classes, self._class_to_ind], \
+          ['ap', 'prec', 'rec', 'classes', 'class_to_ind'], overwrite = True)
+      eval_file = os.path.join(output_dir, 'eval' + det_salt + eval_salt + '.mat')
+      sg_utils.scio.savemat(eval_file, {'ap': ap, 'prec': prec, 'rec': rec, 'classes': self._classes}, do_compression = True);
+      
+      return ap, prec, rec, self._classes, self._class_to_ind
+ 
 
 if __name__ == '__main__':
     d = datasets.nyud2_voc('trainval', '2007')
