@@ -7,6 +7,8 @@
 
 """Test a Fast R-CNN network on an imdb (image database)."""
 
+import python_utils.sg_utils as utils
+from IPython.core.debugger import Tracer
 from fast_rcnn.config import cfg, get_output_dir
 import argparse
 from utils.timer import Timer
@@ -250,9 +252,10 @@ def test_net(net, imdb):
     num_images = len(imdb.image_index)
     # heuristic: keep an average of 40 detections per class per images prior
     # to NMS
-    max_per_set = 40 * num_images
+    max_per_set = cfg.TEST.MAX_PER_SET_F * num_images
     # heuristic: keep at most 100 detection per class per image prior to NMS
-    max_per_image = 100
+    max_per_image = cfg.TEST.MAX_PER_IMAGE
+    
     # detection thresold for each class (this is adaptively set based on the
     # max_per_set constraint)
     thresh = -np.inf * np.ones(imdb.num_classes)
@@ -315,13 +318,15 @@ def test_net(net, imdb):
         for i in xrange(num_images):
             inds = np.where(all_boxes[j][i][:, -1] > thresh[j])[0]
             all_boxes[j][i] = all_boxes[j][i][inds, :]
-
-    det_file = os.path.join(output_dir, 'detections.pkl')
-    with open(det_file, 'wb') as f:
-        cPickle.dump(all_boxes, f, cPickle.HIGHEST_PROTOCOL)
+    
+    det_file = os.path.join(output_dir, 'detections' + cfg.TEST.DET_SALT + '.pkl')
+    utils.save_variables(det_file, [all_boxes], ['all_boxes'], overwrite = True)
+    
+    det_file = os.path.join(output_dir, 'detections' + cfg.TEST.DET_SALT + '.pkl')
+    utils.scio.savemat(det_file, {'all_boxes': all_boxes}, do_compression = True)
 
     print 'Applying NMS to all detections'
     nms_dets = apply_nms(all_boxes, cfg.TEST.NMS)
 
     print 'Evaluating detections'
-    imdb.evaluate_detections(nms_dets, output_dir)
+    ap, prec, rec, classes, class_to_ind = imdb.evaluate_detections(nms_dets, output_dir, cfg.TEST.DET_SALT, cfg.TEST.EVAL_SALT)
