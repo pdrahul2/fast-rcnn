@@ -16,18 +16,29 @@ from roi_data_layer.minibatch import get_minibatch
 import numpy as np
 import yaml
 from multiprocessing import Process, Queue
+from IPython.core.debugger import Tracer
 
 class RoIDataLayer(caffe.Layer):
     """Fast R-CNN data layer used for training."""
 
     def _shuffle_roidb_inds(self):
         """Randomly permute the training roidb."""
-        self._perm = np.random.permutation(np.arange(len(self._roidb)))
+        valid = []
+        for i,r in enumerate(self._roidb):
+            ov = r['max_overlaps'][:, np.newaxis]
+            has_fg = np.any(np.all(ov > cfg.TRAIN.FG_THRESH, axis = 1), axis = 0)
+            has_bg = np.any(np.all(np.hstack((ov > cfg.TRAIN.BG_THRESH_LO, ov < cfg.TRAIN.BG_THRESH_HI)), axis = 1), axis = 0)
+            if has_fg and has_bg:
+                valid.append(i)
+        
+        pp = np.random.permutation(np.arange(len(self._roidb)))
+        pp = [a for a in pp if a in valid]
+        self._perm = pp
         self._cur = 0
 
     def _get_next_minibatch_inds(self):
         """Return the roidb indices for the next minibatch."""
-        if self._cur + cfg.TRAIN.IMS_PER_BATCH >= len(self._roidb):
+        if self._cur + cfg.TRAIN.IMS_PER_BATCH >= len(self._perm):
             self._shuffle_roidb_inds()
 
         db_inds = self._perm[self._cur:self._cur + cfg.TRAIN.IMS_PER_BATCH]

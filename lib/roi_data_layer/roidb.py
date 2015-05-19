@@ -97,29 +97,34 @@ def _compute_targets(rois, overlaps, labels):
 
     # Find which gt ROI each ex ROI has max overlap with:
     # this will be the ex ROI's gt target
-    gt_assignment = ex_gt_overlaps.argmax(axis=1)
-    gt_rois = rois[gt_inds[gt_assignment], :]
-    ex_rois = rois[ex_inds, :]
+    if ex_inds.shape[0] > 0:
+        gt_assignment = ex_gt_overlaps.argmax(axis=1)
+        gt_rois = rois[gt_inds[gt_assignment], :]
+        ex_rois = rois[ex_inds, :]
 
-    ex_widths = ex_rois[:, 2] - ex_rois[:, 0] + cfg.EPS
-    ex_heights = ex_rois[:, 3] - ex_rois[:, 1] + cfg.EPS
-    ex_ctr_x = ex_rois[:, 0] + 0.5 * ex_widths
-    ex_ctr_y = ex_rois[:, 1] + 0.5 * ex_heights
+        ex_widths = ex_rois[:, 2] - ex_rois[:, 0] + cfg.EPS
+        ex_heights = ex_rois[:, 3] - ex_rois[:, 1] + cfg.EPS
+        ex_ctr_x = ex_rois[:, 0] + 0.5 * ex_widths
+        ex_ctr_y = ex_rois[:, 1] + 0.5 * ex_heights
 
-    gt_widths = gt_rois[:, 2] - gt_rois[:, 0] + cfg.EPS
-    gt_heights = gt_rois[:, 3] - gt_rois[:, 1] + cfg.EPS
-    gt_ctr_x = gt_rois[:, 0] + 0.5 * gt_widths
-    gt_ctr_y = gt_rois[:, 1] + 0.5 * gt_heights
+        gt_widths = gt_rois[:, 2] - gt_rois[:, 0] + cfg.EPS
+        gt_heights = gt_rois[:, 3] - gt_rois[:, 1] + cfg.EPS
+        gt_ctr_x = gt_rois[:, 0] + 0.5 * gt_widths
+        gt_ctr_y = gt_rois[:, 1] + 0.5 * gt_heights
 
-    targets_dx = (gt_ctr_x - ex_ctr_x) / ex_widths
-    targets_dy = (gt_ctr_y - ex_ctr_y) / ex_heights
-    targets_dw = np.log(gt_widths / ex_widths)
-    targets_dh = np.log(gt_heights / ex_heights)
+        targets_dx = (gt_ctr_x - ex_ctr_x) / ex_widths
+        targets_dy = (gt_ctr_y - ex_ctr_y) / ex_heights
+        targets_dw = np.log(gt_widths / ex_widths)
+        targets_dh = np.log(gt_heights / ex_heights)
 
-    targets = np.zeros((rois.shape[0], 5), dtype=np.float32)
-    targets[ex_inds, 0] = labels[ex_inds]
-    targets[ex_inds, 1] = targets_dx
-    targets[ex_inds, 2] = targets_dy
-    targets[ex_inds, 3] = targets_dw
-    targets[ex_inds, 4] = targets_dh
+        targets = np.zeros((rois.shape[0], 5), dtype=np.float32)
+        targets[ex_inds, 0] = labels[ex_inds]
+        targets[ex_inds, 1] = targets_dx
+        targets[ex_inds, 2] = targets_dy
+        targets[ex_inds, 3] = targets_dw
+        targets[ex_inds, 4] = targets_dh
+
+    else:
+        targets = np.zeros((rois.shape[0], 5), dtype=np.float32)
+    
     return targets
