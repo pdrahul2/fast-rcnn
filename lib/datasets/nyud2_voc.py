@@ -20,7 +20,7 @@ from IPython.core.debugger import Tracer
 
 class nyud2_voc(datasets.imdb):
     def __init__(self, image_set, year, devkit_path=None, image_type = 'images'):
-        datasets.imdb.__init__(self, 'nyud2_' + year + '_' + image_set)
+        datasets.imdb.__init__(self, 'nyud2_' + image_type + '_' + year + '_' + image_set)
         self._year = year
         self._image_set = image_set
         self._devkit_path = self._get_default_path() if devkit_path is None \

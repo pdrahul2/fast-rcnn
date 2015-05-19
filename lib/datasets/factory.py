@@ -10,6 +10,7 @@
 __sets = {}
 
 import datasets.pascal_voc
+import datasets.nyud2_voc
 import numpy as np
 
 def _selective_search_IJCV_top_k(split, year, top_k):
@@ -20,6 +21,17 @@ def _selective_search_IJCV_top_k(split, year, top_k):
     imdb.roidb_handler = imdb.selective_search_IJCV_roidb
     imdb.config['top_k'] = top_k
     return imdb
+
+# Set up voc_<year>_<split> using selective search "fast" mode
+for year in ['2015']:
+    for split in ['train', 'val', 'trainval', 'test']:
+        name = 'nyud2_images_{:s}_{:s}'.format(year, split)
+        __sets[name] = (lambda split=split, year=year:
+                datasets.nyud2_voc(split, year, image_type = 'images'))
+        name = 'nyud2_hha_{:s}_{:s}'.format(year, split)
+        __sets[name] = (lambda split=split, year=year:
+                datasets.nyud2_voc(split, year, image_type = 'hha'))
+
 
 # Set up voc_<year>_<split> using selective search "fast" mode
 for year in ['2007', '2012']:
