@@ -102,6 +102,11 @@ __C.TEST.SVM = False
 # Test using bounding-box regressors
 __C.TEST.BBOX_REG = True
 
+__C.TEST.MAX_PER_IMAGE  = 100
+__C.TEST.MAX_PER_SET_F = 40
+__C.TEST.DET_SALT = ''
+__C.TEST.EVAL_SALT = ''
+
 #
 # MISC
 #
