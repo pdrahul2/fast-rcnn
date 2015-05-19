@@ -28,11 +28,10 @@ class nyud2_voc(datasets.imdb):
         self._data_path = os.path.join(self._devkit_path, 'data')
         
         self._classes = ('__background__', # always index 0
-                         'aeroplane', 'bicycle', 'bird', 'boat',
-                         'bottle', 'bus', 'car', 'cat', 'chair',
-                         'cow', 'diningtable', 'dog', 'horse',
-                         'motorbike', 'person', 'pottedplant',
-                         'sheep', 'sofa', 'train', 'tvmonitor')
+            'bathtub', 'bed', 'bookshelf', 'box', 'chair', 'counter', 'desk',
+            'door', 'dresser', 'garbage-bin', 'lamp', 'monitor', 'night-stand',
+            'pillow', 'sink', 'sofa', 'table', 'television', 'toilet');
+
         self._class_to_ind = dict(zip(self.classes, xrange(self.num_classes)))
         self._image_type = image_type;
         self._image_ext = '.png'
@@ -124,7 +123,7 @@ class nyud2_voc(datasets.imdb):
             print '{} ss roidb loaded from {}'.format(self.name, cache_file)
             return roidb
 
-        if int(self._year) == 2007 or self._image_set != 'test':
+        if True:
             gt_roidb = self.gt_roidb()
             ss_roidb = self._load_mcg_roidb(gt_roidb)
             roidb = datasets.imdb.merge_roidbs(gt_roidb, ss_roidb)
@@ -132,7 +131,7 @@ class nyud2_voc(datasets.imdb):
             roidb = self._load_mcg_roidb(None)
         with open(cache_file, 'wb') as fid:
             cPickle.dump(roidb, fid, cPickle.HIGHEST_PROTOCOL)
-        print 'wrote ss roidb to {}'.format(cache_file)
+        print 'wrote mcg roidb to {}'.format(cache_file)
 
         return roidb
 
@@ -141,16 +140,15 @@ class nyud2_voc(datasets.imdb):
                                                 'mcg_data', 'nyud2_2015' + '.mat'))
         assert os.path.exists(filename), \
                'Selective search data not found at: {}'.format(filename)
-        Tracer()()
         boxes = sio.loadmat(filename)['bboxes'].ravel()
         imnames = sio.loadmat(filename)['imnames'].ravel()
         imnames = [str(x[0]) for x in imnames]
         
         box_list = []
-        for i in xrange(self._image_index):
+        for i in xrange(len(self._image_index)):
             ind = np.where(self._image_index[i] == np.array(imnames))[0]
             assert(len(ind) == 1)
-            box_list.append(raw_data[i][:, (1, 0, 3, 2)] - 1)
+            box_list.append(boxes[i][:, (1, 0, 3, 2)] - 1)
 
         return self.create_roidb_from_box_list(box_list, gt_roidb)
 
@@ -159,15 +157,15 @@ class nyud2_voc(datasets.imdb):
         Load image and bounding boxes info from XML file in the PASCAL VOC
         format.
         """
-        filename = os.path.join(self._data_path, 'Annotations', index + '.xml')
-        # print 'Loading: {}'.format(filename)
-        def get_data_from_tag(node, tag):
-            return node.getElementsByTagName(tag)[0].childNodes[0].data
+        filename = os.path.join(self._devkit_path, 'benchmarkData', \
+            'gt_box_cache_dir', index + '.mat')
+        print 'Loading: {}'.format(filename)
+        raw_data = sio.loadmat(filename)
+        objs = raw_data['rec']['objects'][0][0][0]
 
-        with open(filename) as f:
-            data = minidom.parseString(f.read())
-
-        objs = data.getElementsByTagName('object')
+        # Select object we care about
+        objs = [obj for obj in objs if self._class_to_ind.get(str(obj['class'][0])) is not None]
+        
         num_objs = len(objs)
 
         boxes = np.zeros((num_objs, 4), dtype=np.uint16)
@@ -177,13 +175,8 @@ class nyud2_voc(datasets.imdb):
         # Load object bounding boxes into a data frame.
         for ix, obj in enumerate(objs):
             # Make pixel indexes 0-based
-            x1 = float(get_data_from_tag(obj, 'xmin')) - 1
-            y1 = float(get_data_from_tag(obj, 'ymin')) - 1
-            x2 = float(get_data_from_tag(obj, 'xmax')) - 1
-            y2 = float(get_data_from_tag(obj, 'ymax')) - 1
-            cls = self._class_to_ind[
-                    str(get_data_from_tag(obj, "name")).lower().strip()]
-            boxes[ix, :] = [x1, y1, x2, y2]
+            cls = self._class_to_ind.get(str(obj['class'][0]))
+            boxes[ix, :] = obj['bbox'][0] - 1
             gt_classes[ix] = cls
             overlaps[ix, cls] = 1.0
 
@@ -193,6 +186,7 @@ class nyud2_voc(datasets.imdb):
                 'gt_classes': gt_classes,
                 'gt_overlaps' : overlaps,
                 'flipped' : False}
+
     def evaluate_detections(self, all_boxes, output_dir):
         comp_id = self._write_voc_results_file(all_boxes)
         self._do_matlab_eval(comp_id, output_dir)

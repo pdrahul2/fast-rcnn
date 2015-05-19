@@ -164,11 +164,14 @@ class imdb(object):
                 gt_classes = gt_roidb[i]['gt_classes']
                 gt_overlaps = bbox_overlaps(boxes.astype(np.float),
                                             gt_boxes.astype(np.float))
-                argmaxes = gt_overlaps.argmax(axis=1)
-                maxes = gt_overlaps.max(axis=1)
-                I = np.where(maxes > 0)[0]
-                overlaps[I, gt_classes[argmaxes[I]]] = maxes[I]
-
+                if gt_overlaps.shape[1] > 0:
+                    argmaxes = gt_overlaps.argmax(axis=1)
+                    maxes = gt_overlaps.max(axis=1)
+                    I = np.where(maxes > 0)[0]
+                    overlaps[I, gt_classes[argmaxes[I]]] = maxes[I]
+                else:
+                    overlaps = np.zeros((num_boxes, self.num_classes), dtype=np.float32)
+            
             overlaps = scipy.sparse.csr_matrix(overlaps)
             roidb.append({'boxes' : boxes,
                           'gt_classes' : np.zeros((num_boxes,),
@@ -176,18 +179,18 @@ class imdb(object):
                           'gt_overlaps' : overlaps,
                           'flipped' : False})
         return roidb
-
     @staticmethod
     def merge_roidbs(a, b):
         assert len(a) == len(b)
         for i in xrange(len(a)):
             a[i]['boxes'] = np.vstack((a[i]['boxes'], b[i]['boxes']))
-            a[i]['gt_classes'] = np.hstack((a[i]['gt_classes'],
-                                            b[i]['gt_classes']))
-            a[i]['gt_overlaps'] = scipy.sparse.vstack([a[i]['gt_overlaps'],
-                                                       b[i]['gt_overlaps']])
+            a[i]['gt_classes'] = np.hstack((a[i]['gt_classes'], b[i]['gt_classes']))
+            if(a[i]['gt_overlaps'].shape[0] == 0):
+                a[i]['gt_overlaps'] = b[i]['gt_overlaps']
+            else:
+                a[i]['gt_overlaps'] = scipy.sparse.vstack([a[i]['gt_overlaps'], b[i]['gt_overlaps']])
         return a
-
+    
     def competition_mode(self, on):
         """Turn competition mode on or off."""
         pass
