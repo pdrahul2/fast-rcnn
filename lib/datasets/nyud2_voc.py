@@ -24,7 +24,6 @@ class nyud2_voc(datasets.imdb):
     def __init__(self, image_set, year, devkit_path=None, image_type = 'images'):
         datasets.imdb.__init__(self, 'nyud2_' + image_type + '_' + year + '_' + image_set)
         self._year = year
-        self._image_set = image_set
         self._devkit_path = self._get_default_path() if devkit_path is None \
                             else devkit_path
         self._data_path = os.path.join(self._devkit_path, 'data')
@@ -61,10 +60,11 @@ class nyud2_voc(datasets.imdb):
         """
         Construct an image path from the image's "index" identifier.
         """
-        image_path = os.path.join(self._data_path, self._image_type,
-                                  index + self._image_ext)
-        assert os.path.exists(image_path), \
-                'Path does not exist: {}'.format(image_path)
+        image_path = []
+        image_type_list = self._image_type.split('+')
+        for typ in image_type_list:
+            image_path.append(os.path.join(self._data_path, typ, index + self._image_ext))
+            assert os.path.exists(image_path[-1]), 'Path does not exist: {}'.format(image_path)
         return image_path
 
     def _load_image_set_index(self):

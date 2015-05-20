@@ -26,7 +26,15 @@ def get_minibatch(roidb, num_classes):
     fg_rois_per_image = np.round(cfg.TRAIN.FG_FRACTION * rois_per_image)
 
     # Get the input image blob, formatted for caffe
-    im_blob, im_scales = _get_image_blob(roidb, random_scale_inds)
+    im_scales = None; im_blob = [];
+    for data_i in xrange(num_data):
+        im_blob_i, im_scales_i = _get_image_blob(roidb, random_scale_inds, data_i)
+        if im_scales is None:
+            im_scales = im_scales_i
+        else:
+            assert(im_scales == im_scales_i), 'im_scales are different between different data sources' 
+        im_blob.append(im_blob_i)
+
 
     # Now, build the region of interest and label blobs
     rois_blob = np.zeros((0, 5), dtype=np.float32)
@@ -54,9 +62,11 @@ def get_minibatch(roidb, num_classes):
     # For debug visualizations
     # _vis_minibatch(im_blob, rois_blob, labels_blob, all_overlaps)
 
-    blobs = {'data': im_blob,
+    blobs = {'data': im_blob[0],
              'rois': rois_blob,
              'labels': labels_blob}
+    for i in xrange(1, num_data):
+        blobs['data_{:d}'.format(i)] = im_blob[i]
 
     if cfg.TRAIN.BBOX_REG:
         blobs['bbox_targets'] = bbox_targets_blob
@@ -111,7 +121,7 @@ def _sample_rois(roidb, fg_rois_per_image, rois_per_image, num_classes):
 
     return labels, overlaps, rois, bbox_targets, bbox_loss_weights
 
-def _get_image_blob(roidb, scale_inds):
+def _get_image_blob(roidb, scale_inds, data_i):
     """Builds an input blob from the images in the roidb at the specified
     scales.
     """
@@ -119,7 +129,7 @@ def _get_image_blob(roidb, scale_inds):
     processed_ims = []
     im_scales = []
     for i in xrange(num_images):
-        im = cv2.imread(roidb[i]['image'])
+        im = cv2.imread(roidb[i]['image'][data_i])
         if roidb[i]['flipped']:
             im = im[:, ::-1, :]
         target_size = cfg.TRAIN.SCALES[scale_inds[i]]
