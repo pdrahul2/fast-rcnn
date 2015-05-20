@@ -12,8 +12,9 @@ import numpy.random as npr
 import cv2
 from fast_rcnn.config import cfg
 from utils.blob import prep_im_for_blob, im_list_to_blob
+from IPython.core.debugger import Tracer
 
-def get_minibatch(roidb, num_classes):
+def get_minibatch(roidb, num_classes, num_data):
     """Given a roidb, construct a minibatch sampled from it."""
     num_images = len(roidb)
     # Sample random scales to use for each image in this batch
@@ -67,6 +68,7 @@ def get_minibatch(roidb, num_classes):
              'labels': labels_blob}
     for i in xrange(1, num_data):
         blobs['data_{:d}'.format(i)] = im_blob[i]
+        assert(im_blob[0].shape == im_blob[i].shape), "images do not have the same size"
 
     if cfg.TRAIN.BBOX_REG:
         blobs['bbox_targets'] = bbox_targets_blob

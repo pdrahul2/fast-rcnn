@@ -57,7 +57,7 @@ class RoIDataLayerPi(caffe.Layer):
         else:
             db_inds = self._get_next_minibatch_inds()
             minibatch_db = [self._roidb[i] for i in db_inds]
-            return get_minibatch(minibatch_db, self._num_classes)
+            return get_minibatch(minibatch_db, self._num_classes, self._num_data)
 
     def set_roidb(self, roidb):
         """Set the roidb to be used by this layer during training."""
@@ -99,7 +99,7 @@ class RoIDataLayerPi(caffe.Layer):
         top[0].reshape(1, 3, 100, 100)
 
         for i in xrange(1, self._num_data):
-            self._name_to_top_map['data_{:d}'.format(i+1)] = i;
+            self._name_to_top_map['data_{:d}'.format(i)] = i;
             top[i].reshape(1, 3, 100, 100)
 
         self._name_to_top_map['rois'] = self._num_data;

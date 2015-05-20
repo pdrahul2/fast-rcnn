@@ -93,7 +93,9 @@ class imdb(object):
 
     def append_flipped_images(self):
         num_images = self.num_images
-        widths = [PIL.Image.open(self.image_path_at(i)).size[0]
+        # Load only the first image, for finding the size, 
+        # hopefully all the sizes are the same
+        widths = [PIL.Image.open(self.image_path_at(i)[0]).size[0]
                   for i in xrange(num_images)]
         for i in xrange(num_images):
             boxes = self.roidb[i]['boxes'].copy()
