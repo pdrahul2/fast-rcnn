@@ -102,7 +102,11 @@ def _project_im_rois(im_rois, scales):
 def _get_blobs(im, rois):
     """Convert an image and RoIs within that image into network inputs."""
     blobs = {'data' : None, 'rois' : None}
-    blobs['data'], im_scale_factors = _get_image_blob(im)
+    blobs['data'], im_scale_factors = _get_image_blob(im[0])
+    for i in xrange(1, len(im)):
+        blobs['data_{:d}'.format(i)], im_scale_factors_i = _get_image_blob(im[i])
+        assert(im_scale_factors == im_scale_factors_i), "image sizes do not match."
+        
     blobs['rois'] = _get_rois_blob(rois, im_scale_factors)
     return blobs, im_scale_factors
 
@@ -181,10 +185,21 @@ def im_detect(net, im, boxes):
         boxes = boxes[index, :]
 
     # reshape network inputs
-    net.blobs['data'].reshape(*(blobs['data'].shape))
     net.blobs['rois'].reshape(*(blobs['rois'].shape))
-    blobs_out = net.forward(data=blobs['data'].astype(np.float32, copy=False),
-                            rois=blobs['rois'].astype(np.float32, copy=False))
+    net.blobs['data'].reshape(*(blobs['data'].shape))
+    for i in xrange(1, len(im)):
+        net.blobs['data_{:d}'.format(i)].reshape(*(blobs['data_{:d}'.format(i)].shape))
+    
+    if len(im) == 1:
+        blobs_out = net.forward(data=blobs['data'].astype(np.float32, copy=False),
+                                rois=blobs['rois'].astype(np.float32, copy=False))
+    if len(im) == 2:
+        blobs_out = net.forward(data   = blobs['data'].astype(np.float32, copy=False),
+                                data_1 = blobs['data_1'].astype(np.float32, copy=False), 
+                                rois   = blobs['rois'].astype(np.float32, copy=False))
+    else:
+        Exception('can only handle 2 images at a time, write cases for more.')
+
     if cfg.TEST.SVM:
         # use the raw scores before softmax under the assumption they
         # were trained as linear SVMs
@@ -197,7 +212,7 @@ def im_detect(net, im, boxes):
         # Apply bounding-box regression deltas
         box_deltas = blobs_out['bbox_pred']
         pred_boxes = _bbox_pred(boxes, box_deltas)
-        pred_boxes = _clip_boxes(pred_boxes, im.shape)
+        pred_boxes = _clip_boxes(pred_boxes, im[0].shape)
     else:
         # Simply repeat the boxes, once for each class
         pred_boxes = np.tile(boxes, (1, scores.shape[1]))
@@ -277,7 +292,10 @@ def test_net(net, imdb):
 
     roidb = imdb.roidb
     for i in xrange(num_images):
-        im = cv2.imread(imdb.image_path_at(i))
+        image_paths = imdb.image_path_at(i); im = [];
+        for image_path in image_paths:
+            im.append(cv2.imread(image_path))
+        
         _t['im_detect'].tic()
         scores, boxes = im_detect(net, im, roidb[i]['boxes'])
         _t['im_detect'].toc()
