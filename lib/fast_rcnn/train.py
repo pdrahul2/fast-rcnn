@@ -55,6 +55,7 @@ class SolverWrapper(object):
             orig_0 = []; orig_1 = [];
             # save original values
             for i, bbox_pred_param_name in enumerate(cfg.TRAIN.BBOX_PRED_PARAM_NAMES):
+                print 'adjusting {} parameters'.format(bbox_pred_param_name)
                 orig_0.append(net.params[bbox_pred_param_name][0].data.copy())
                 orig_1.append(net.params[bbox_pred_param_name][1].data.copy())
 
