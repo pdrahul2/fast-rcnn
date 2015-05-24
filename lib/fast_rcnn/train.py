@@ -50,19 +50,22 @@ class SolverWrapper(object):
         bounding-box regression weights. This enables easy use at test-time.
         """
         net = self.solver.net
-
+        
         if cfg.TRAIN.BBOX_REG:
+            orig_0 = []; orig_1 = [];
             # save original values
-            orig_0 = net.params['bbox_pred'][0].data.copy()
-            orig_1 = net.params['bbox_pred'][1].data.copy()
+            for i, bbox_pred_param_name in enumerate(cfg.TRAIN.BBOX_PRED_PARAM_NAMES):
+                orig_0.append(net.params[bbox_pred_param_name][0].data.copy())
+                orig_1.append(net.params[bbox_pred_param_name][1].data.copy())
 
             # scale and shift with bbox reg unnormalization; then save snapshot
-            net.params['bbox_pred'][0].data[...] = \
-                    (net.params['bbox_pred'][0].data *
-                     self.bbox_stds[:, np.newaxis])
-            net.params['bbox_pred'][1].data[...] = \
-                    (net.params['bbox_pred'][1].data *
-                     self.bbox_stds + self.bbox_means)
+            for i, bbox_pred_param_name in enumerate(cfg.TRAIN.BBOX_PRED_PARAM_NAMES):
+                net.params[bbox_pred_param_name][0].data[...] = \
+                        (net.params[bbox_pred_param_name][0].data *
+                         self.bbox_stds[:, np.newaxis])
+                net.params[bbox_pred_param_name][1].data[...] = \
+                        (net.params[bbox_pred_param_name][1].data *
+                         self.bbox_stds + self.bbox_means)
 
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
@@ -78,8 +81,9 @@ class SolverWrapper(object):
 
         if cfg.TRAIN.BBOX_REG:
             # restore net to original state
-            net.params['bbox_pred'][0].data[...] = orig_0
-            net.params['bbox_pred'][1].data[...] = orig_1
+            for i, bbox_pred_param_name in enumerate(cfg.TRAIN.BBOX_PRED_PARAM_NAMES):
+                net.params[bbox_pred_param_name][0].data[...] = orig_0[i]
+                net.params[bbox_pred_param_name][1].data[...] = orig_1[i]
 
     def train_model(self, max_iters):
         """Network training loop."""
