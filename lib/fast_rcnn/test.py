@@ -105,7 +105,7 @@ def _get_blobs(im, rois):
     blobs['data'], im_scale_factors = _get_image_blob(im[0])
     for i in xrange(1, len(im)):
         blobs['data_{:d}'.format(i)], im_scale_factors_i = _get_image_blob(im[i])
-        assert(im_scale_factors == im_scale_factors_i), "image sizes do not match."
+        assert(np.all(im_scale_factors == im_scale_factors_i)), "image sizes do not match."
         
     blobs['rois'] = _get_rois_blob(rois, im_scale_factors)
     return blobs, im_scale_factors
