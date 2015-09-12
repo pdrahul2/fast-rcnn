@@ -7,7 +7,7 @@
 
 """Test a Fast R-CNN network on an imdb (image database)."""
 
-import python_utils.sg_utils as utils
+import python_utils.general_utils as g_utils
 from IPython.core.debugger import Tracer
 from fast_rcnn.config import cfg, get_output_dir
 import argparse
@@ -338,10 +338,10 @@ def test_net(net, imdb):
             all_boxes[j][i] = all_boxes[j][i][inds, :]
     
     det_file = os.path.join(output_dir, 'detections' + cfg.TEST.DET_SALT + '.pkl')
-    utils.save_variables(det_file, [all_boxes], ['all_boxes'], overwrite = True)
+    g_utils.save_variables(det_file, [all_boxes], ['all_boxes'], overwrite = True)
     
     det_file = os.path.join(output_dir, 'detections' + cfg.TEST.DET_SALT + '.pkl')
-    utils.scio.savemat(det_file, {'all_boxes': all_boxes}, do_compression = True)
+    g_utils.scio.savemat(det_file, {'all_boxes': all_boxes}, do_compression = True)
 
     print 'Applying NMS to all detections'
     nms_dets = apply_nms(all_boxes, cfg.TEST.NMS)
