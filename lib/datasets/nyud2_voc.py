@@ -6,7 +6,7 @@
 # --------------------------------------------------------
 
 import python_utils.evaluate_detection as eval
-import python_utils.sg_utils as sg_utils
+import python_utils.general_utils as g_utils
 import datasets
 import datasets.nyud2_voc
 import os
@@ -228,10 +228,10 @@ class nyud2_voc(datasets.imdb):
           print ap_str
 
       eval_file = os.path.join(output_dir, 'eval' + det_salt + eval_salt + '.pkl')
-      sg_utils.save_variables(eval_file, [ap, prec, rec, self._classes, self._class_to_ind], \
+      g_utils.save_variables(eval_file, [ap, prec, rec, self._classes, self._class_to_ind], \
           ['ap', 'prec', 'rec', 'classes', 'class_to_ind'], overwrite = True)
       eval_file = os.path.join(output_dir, 'eval' + det_salt + eval_salt + '.mat')
-      sg_utils.scio.savemat(eval_file, {'ap': ap, 'prec': prec, 'rec': rec, 'classes': self._classes}, do_compression = True);
+      g_utils.scio.savemat(eval_file, {'ap': ap, 'prec': prec, 'rec': rec, 'classes': self._classes}, do_compression = True);
       
       return ap, prec, rec, self._classes, self._class_to_ind
  
