@@ -11,3 +11,19 @@ Test outputs are saved under:
 ```
 output/<experiment directory>/<dataset name>/<network snapshot name>/
 ```
+
+Pre-trained models
+```
+# VGG RGB model and AlexNet HHA model
+vgg_rgb_alexnet_hha 
+
+# AlexNet RGB model and AlexNet HHA model
+alexnet_rgb_alexnet_hha
+
+# Prototxt files for training the various models
+training_demo/alexnet_rgb_alexnet_hha
+training_demo/alexnet_hha
+training_demo/alexnet_rgb
+training_demo/vgg_rgb_alexnet_hha
+training_demo/vgg_rgb
+```
