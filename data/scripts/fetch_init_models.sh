@@ -3,9 +3,9 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../" && pwd )"
 cd $DIR
 
-FILE=imagenet_models.tgz
-URL=http://www.cs.berkeley.edu/~rbg/fast-rcnn-data/$FILE
-CHECKSUM=8b1d4b9da0593fc70ef403284f810adc
+FILE=init_models.tgz
+URL=ftp://ftp.cs.berkeley.edu/pub/projects/vision/sgupta-distillation/$FILE
+CHECKSUM=023859bb967f03cc94f7ae4183e53a7c
 
 if [ -f $FILE ]; then
   echo "File already exists. Checking md5..."
@@ -23,7 +23,7 @@ if [ -f $FILE ]; then
   fi
 fi
 
-echo "Downloading pretrained ImageNet models (1G)..."
+echo "Downloading pretrained ImageNet models (767 MB)..."
 
 wget $URL -O $FILE
 
