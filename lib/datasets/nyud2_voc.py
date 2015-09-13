@@ -87,7 +87,7 @@ class nyud2_voc(datasets.imdb):
         """
         Return the default path where PASCAL VOC is expected to be installed.
         """
-        return os.path.join('/work4', 'sgupta', 'datasets', 'nyud2')
+        return os.path.join('data', 'nyud2')
 
     def gt_roidb(self):
         """
@@ -139,8 +139,7 @@ class nyud2_voc(datasets.imdb):
         return roidb
 
     def _load_mcg_roidb(self, gt_roidb):
-        filename = os.path.abspath(os.path.join(self.cache_path, '..',
-                                                'mcg_data', 'nyud2_2015' + '.mat'))
+        filename = os.path.abspath(os.path.join('data', 'nyud2_mcg_boxes' + '.mat'))
         assert os.path.exists(filename), \
                'Selective search data not found at: {}'.format(filename)
         boxes = sio.loadmat(filename)['bboxes'].ravel()
