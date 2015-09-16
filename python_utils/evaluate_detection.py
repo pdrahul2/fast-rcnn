@@ -1,6 +1,8 @@
-# --------------------------------------------------------
-# Written by Saurabh Gupta
-# --------------------------------------------------------
+# ---------------------------------------------------------
+# Copyright (c) 2015, Saurabh Gupta
+# 
+# Licensed under The MIT License [see LICENSE for details]
+# ---------------------------------------------------------
 
 import utils.cython_bbox
 import numpy as np

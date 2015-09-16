@@ -1,6 +1,8 @@
-# --------------------------------------------------------
-# Written by Saurabh Gupta
-# --------------------------------------------------------
+# ---------------------------------------------------------
+# Copyright (c) 2015, Saurabh Gupta
+# 
+# Licensed under The MIT License [see LICENSE for details]
+# ---------------------------------------------------------
 
 import numpy as np
 import cPickle

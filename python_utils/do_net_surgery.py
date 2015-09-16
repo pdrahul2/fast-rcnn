@@ -1,3 +1,9 @@
+# ---------------------------------------------------------
+# Copyright (c) 2015, Saurabh Gupta
+# 
+# Licensed under The MIT License [see LICENSE for details]
+# ---------------------------------------------------------
+
 # For fusing network outputs
 import _init_paths
 import caffe

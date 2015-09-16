@@ -1,3 +1,10 @@
+# ---------------------------------------------------------
+# Copyright (c) 2015, Saurabh Gupta
+# 
+# Licensed under The MIT License [see LICENSE for details]
+# ---------------------------------------------------------
+
+
 import caffe, yaml 
 
 def net_surgery(net, json_file_or_dict):

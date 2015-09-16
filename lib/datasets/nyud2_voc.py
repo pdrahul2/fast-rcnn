@@ -1,9 +1,8 @@
-# --------------------------------------------------------
-# Fast R-CNN
-# Copyright (c) 2015 Microsoft
+# ---------------------------------------------------------
+# Copyright (c) 2015, Saurabh Gupta
+# 
 # Licensed under The MIT License [see LICENSE for details]
-# Written by Ross Girshick
-# --------------------------------------------------------
+# ---------------------------------------------------------
 
 import python_utils.evaluate_detection as eval
 import python_utils.general_utils as g_utils
