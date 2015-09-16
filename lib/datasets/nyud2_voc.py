@@ -217,7 +217,7 @@ class nyud2_voc(datasets.imdb):
                   diff = np.zeros((len(cls_ind),1)).astype(np.bool)
                   gt.append(dict({'diff': diff, 'boxInfo': bb}))
               bOpts = dict({'minoverlap': overlap_thresh})
-              ap_i, rec_i, prec_i = eval.inst_image(dt, gt, bOpts)
+              ap_i, rec_i, prec_i = eval.inst_bench(dt, gt, bOpts)[:3]
               ap.append(ap_i[0]); prec.append(prec_i); rec.append(rec_i)
               ap_str = '{:20s}:{:10f}'.format(self.classes[i], ap_i[0]*100)
               f.write(ap_str + '\n')
