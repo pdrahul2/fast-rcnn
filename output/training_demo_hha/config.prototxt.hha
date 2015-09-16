@@ -1,0 +1,12 @@
+EXP_DIR: training_demo_hha
+TRAIN:
+  SCALES: !!python/tuple [688]
+  MAX_SIZE: 2000
+  SNAPSHOT_INFIX: images
+  BBOX_REG: True
+  BG_THRESH_LO: 0.
+  BBOX_PRED_PARAM_NAMES: !!python/tuple ['da_bbox_pred']
+TEST:
+  BBOX_REG: True
+  SCALES: !!python/tuple [688]
+  MAX_SIZE: 2000
