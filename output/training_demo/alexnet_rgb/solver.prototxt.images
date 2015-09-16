@@ -1,6 +1,6 @@
-# cfg: "output/training_demo_rgb_alexnet/config.prototxt.images"
-# deploy_net: "output/training_demo_rgb_alexnet/test.prototxt.images"
-train_net: "output/training_demo_rgb_alexnet/train.prototxt.images"
+# cfg: "output/training_demo/alexnet_rgb/config.prototxt.images"
+# deploy_net: "output/training_demo/alexnet_rgb/test.prototxt.images"
+train_net: "output/training_demo/alexnet_rgb/train.prototxt.images"
 
 base_lr: 0.001
 lr_policy: "step"

@@ -1,6 +1,6 @@
-# cfg: "output/training_demo_hha/config.prototxt.hha"
-# deploy_net: "output/training_demo_hha/test.prototxt.hha"
-train_net: "output/training_demo_hha/train.prototxt.hha"
+# cfg: "output/training_demo/alexnet_hha/config.prototxt.hha"
+# deploy_net: "output/training_demo/alexnet_hha/test.prototxt.hha"
+train_net: "output/training_demo/alexnet_hha/train.prototxt.hha"
 
 base_lr: 0.001
 lr_policy: "step"

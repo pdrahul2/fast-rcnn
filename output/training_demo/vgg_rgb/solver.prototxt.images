@@ -1,6 +1,6 @@
-# cfg: "output/training_demo_rgb_vgg/config.prototxt.images"
-# deploy_net: "output/training_demo_rgb_vgg/test.prototxt.images"
-train_net: "output/training_demo_rgb_vgg/train.prototxt.images"
+# cfg: "output/training_demo/vgg_rgb/config.prototxt.images"
+# deploy_net: "output/training_demo/vgg_rgb/test.prototxt.images"
+train_net: "output/training_demo/vgg_rgb/train.prototxt.images"
 
 base_lr: 0.001
 lr_policy: "step"
