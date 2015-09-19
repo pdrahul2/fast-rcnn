@@ -61,20 +61,20 @@ If you find this code base and models useful in your research, please consider c
 
 1. Clone the repository
   ```Shell
-  # Make sure to clone with --recursive
-  git clone --recursive git@github.com:s-gupta/fast-rcnn.git
+  # Clone the python code
+  git clone git@github.com:s-gupta/fast-rcnn.git
   ```
   
-2. We'll call the directory that you cloned Fast R-CNN into `FRCN_ROOT`
+2. We'll call the directory that you cloned Fast R-CNN into `FRCN_ROOT`. Clone Caffe with roi_pooling_layers:
 
-   *Ignore notes 1 and 2 if you followed step 1 above.*
-   
-   **Note 1:** If you didn't clone Fast R-CNN with the `--recursive` flag, then you'll need to manually clone the `caffe-fast-rcnn` submodule:
     ```Shell
-    git submodule update --init --recursive
+    cd $FRCNN_ROOT
+    git clone https://github.com/rbgirshick/caffe-fast-rcnn.git caffe-fast-rcnn
+    cd caffe-fast-rcnn
+    # caffe-fast-rcnn needs to be on the fast-rcnn branch (or equivalent detached state).
+    git checkout fast-rcnn
     ```
-    **Note 2:** The `caffe-fast-rcnn` submodule needs to be on the `fast-rcnn` branch (or equivalent detached state). This will happen automatically *if you follow these instructions*.
-
+    
 3. Build the Cython modules
     ```Shell
     cd $FRCN_ROOT/lib
@@ -88,9 +88,11 @@ If you find this code base and models useful in your research, please consider c
     #   http://caffe.berkeleyvision.org/installation.html
 
     # If you're experienced with Caffe and have all of the requirements installed
-    # and your Makefile.config in place, then simply do:
+    # and your Makefile.config in place, then simply do.
+    # Make sure caffe is built with PYTHON layers.
     make -j8 && make pycaffe
     ```
+    
 ### Download models and data
 1. Download the NYUD2 data
 
@@ -102,19 +104,22 @@ If you find this code base and models useful in your research, please consider c
 2. Download the NYUD2 MCG boxes
 
   ```Shell
+  cd $FRCN_ROOT
   ./data/scripts/fetch_nyud2_mcg_boxes.sh
   ```
 
 3. Download the ImageNet and Supervision Transfer Models 
 
   ```Shell
+  cd $FRCN_ROOT
   ./data/scripts/fetch_init_models.sh
   ```
 
 4. Fetch NYUD2 Object Detector Models.
 
-	```Shell
-  ./outputs/fetch_nyud2_models.sh
+  ```Shell
+  cd $FRCN_ROOT
+  ./outputs/scripts/fetch_nyud2_detectors.sh
   ```
 
 ### Usage
