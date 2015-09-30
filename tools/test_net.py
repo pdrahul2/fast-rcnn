@@ -55,7 +55,6 @@ def parse_args():
     parser.add_argument('--sds_img_blob_names', default=['image'], type=str, nargs='+')
     parser.add_argument('--sds_output_blob_name', default='loss', type=str)
     parser.add_argument('--sds_sp_thresh', default=0.4, type=float)
-
     
     if len(sys.argv) == 1:
         parser.print_help()
@@ -75,7 +74,7 @@ if __name__ == '__main__':
     
     if args.set_cfgs is not None:
         cfg_from_list(args.set_cfgs)
-  
+
     print('Using config:')
     pprint.pprint(cfg)
     
