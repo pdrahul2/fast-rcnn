@@ -157,7 +157,7 @@ def _clip_boxes(boxes, im_shape):
     boxes[:, 3::4] = np.minimum(boxes[:, 3::4], im_shape[0] - 1)
     return boxes
 
-def im_detect(net, im, boxes):
+def im_detect(net, im, boxes, score_blob_name='cls_prob', bbox_blob_name='bbox_pred'):
     """Detect object classes in an image given object proposals.
 
     Arguments:
@@ -206,11 +206,11 @@ def im_detect(net, im, boxes):
         scores = net.blobs['cls_score'].data
     else:
         # use softmax estimated probabilities
-        scores = blobs_out['cls_prob']
+        scores = blobs_out[score_blob_name]
 
     if cfg.TEST.BBOX_REG:
         # Apply bounding-box regression deltas
-        box_deltas = blobs_out['bbox_pred']
+        box_deltas = blobs_out[bbox_blob_name]
         pred_boxes = _bbox_pred(boxes, box_deltas)
         pred_boxes = _clip_boxes(pred_boxes, im[0].shape)
     else:
@@ -262,7 +262,7 @@ def apply_nms(all_boxes, thresh):
             nms_boxes[cls_ind][im_ind] = dets[keep, :].copy()
     return nms_boxes
 
-def test_net(net, imdb):
+def test_net(net, imdb, score_blob_name, bbox_blob_name):
     """Test a Fast R-CNN network on an image database."""
     num_images = len(imdb.image_index)
     # heuristic: keep an average of 40 detections per class per images prior
@@ -297,7 +297,8 @@ def test_net(net, imdb):
             im.append(cv2.imread(image_path))
         
         _t['im_detect'].tic()
-        scores, boxes = im_detect(net, im, roidb[i]['boxes'])
+        scores, boxes = im_detect(net, im, roidb[i]['boxes'], 
+          score_blob_name=score_blob_name, bbox_blob_name=bbox_blob_name)
         _t['im_detect'].toc()
 
         _t['misc'].tic()
