@@ -39,6 +39,7 @@ class nyud2_voc(datasets.imdb):
         self._image_index = self._load_image_set_index()
         # Default to roidb handler
         self._roidb_handler = self.mcg_roidb
+        self._gt_roidb = None
 
         # PASCAL specific config options
         self.config = {'cleanup'  : True,
@@ -94,20 +95,21 @@ class nyud2_voc(datasets.imdb):
 
         This function loads/saves from/to a cache file to speed up future calls.
         """
-        cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb.pkl')
-        if os.path.exists(cache_file):
-            with open(cache_file, 'rb') as fid:
-                roidb = cPickle.load(fid)
-            print '{} gt roidb loaded from {}'.format(self.name, cache_file)
-            return roidb
+        if self._gt_roidb is None:
+            cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb.pkl')
+            if os.path.exists(cache_file):
+                with open(cache_file, 'rb') as fid:
+                    gt_roidb = cPickle.load(fid)
+                print '{} gt roidb loaded from {}'.format(self.name, cache_file)
+            else:
+                gt_roidb = [self._load_nyud2_annotation(index)
+                          for index in self.image_index]
+                with open(cache_file, 'wb') as fid:
+                    cPickle.dump(gt_roidb, fid, cPickle.HIGHEST_PROTOCOL)
+                print 'wrote gt roidb to {}'.format(cache_file)
+            self._gt_roidb = gt_roidb
 
-        gt_roidb = [self._load_nyud2_annotation(index)
-                    for index in self.image_index]
-        with open(cache_file, 'wb') as fid:
-            cPickle.dump(gt_roidb, fid, cPickle.HIGHEST_PROTOCOL)
-        print 'wrote gt roidb to {}'.format(cache_file)
-
-        return gt_roidb
+        return self._gt_roidb
 
     def mcg_roidb(self):
         """
