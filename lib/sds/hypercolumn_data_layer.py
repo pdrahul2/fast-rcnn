@@ -7,7 +7,9 @@ import pickle
 from prepare_blobs import get_blobs
 import sbd
 import os
+from utils.cython_bbox import bbox_overlaps
 import sds_config as cfg
+
 def get_box_overlap(box_1, box_2):
   box1 = box_1.copy().astype(np.float32)
   box2 = box_2.copy().astype(np.float32)
@@ -27,11 +29,10 @@ def get_box_overlap(box_1, box_2):
 class HypercolumnDataLayer(caffe.Layer):
   def _parse_args(self, str_arg):
     parser = argparse.ArgumentParser(description='Hypercolumn Data Layer Parameters')
-    parser.add_argument('--proposalfile', default='train_mcg_boxes.pkl', type=str)
-    parser.add_argument('--gtfile', default=os.path.join(sbd.sbddir, 'gttrain.pkl'), type=str)
-    parser.add_argument('--trainset', default='train.txt', type=str)
-    parser.add_argument('--ovthresh', default=0.7, type=float)
-    parser.add_argument('--imgpath', default='/data1/shubhtuls/cachedir/VOCdevkit/VOC2012/JPEGImages/{}.jpg', type=str)
+    parser.add_argument('--imdb_name', default='nyud2_images_2015_train', type=str)
+    parser.add_argument('--ov_thresh', default=0.7, type=float)
+    parser.add_argument('--train_samples_per_img', default=5, type=int)
+    parser.add_argument('--num_classes', default=19, type=int)
     args = parser.parse_args(str_arg.split())
     print('Using config:')
     pprint.pprint(args)
@@ -42,49 +43,51 @@ class HypercolumnDataLayer(caffe.Layer):
 
   def setup(self, bottom, top):
     self._params = self._parse_args(self.param_str_)
-    with open(self._params.proposalfile,'r') as f:
-      o = pickle.load(f)
-    self.boxes=o['boxes']
-    with open(self._params.gtfile, 'r') as f:
-      self.gt = pickle.load(f)
-    #categories are from 1 to 20 so subtract 1
+    imdb          = lib.datasets.factory.get_imdb(self._params.imdb_name)
+    gt_roidb      = imdb.gt_roidb();
+    roidb         = imdb.roidb;
+    self._imdb    = imdb
+    self._roidb   = roidb;
+    self.gt_roidb = gt_roidb;
+    imdb._attach_instance_segmentation;
+
     self.gt['classes'] = [x-1 for x in self.gt['classes']]
 
 
-    with open(self._params.trainset) as f:
-      names = f.readlines()
-    self.names = [x[:-1] for x in names]
-    
     #how many categories are there?
-    maxcateg = np.max(np.array([np.max(x) for x in self.gt['classes']]))
-    self.numclasses=maxcateg+1
+    self.num_classes = self._params.num_classes + 1
     
     #initialize
-    self.data_percateg=[]
-    for i in range(self.numclasses):
+    self.data_percateg = []
+    for i in range(self.num_classes):
       self.data_percateg.append({'boxids':[],'imids':[],'instids':[], 'im_end_index':[-1]})
 
-    #compute all overlaps and pick boxes that have greater than threshold overlap
-    for i in range(len(self.names)):
-      ov = get_box_overlap(self.boxes[i], self.gt['boxes'][i])
+    # compute all overlaps and pick boxes that have greater than threshold overlap
+    for i in range(len(imdb.num_images)): 
+      roidb_i = roidb[i]
+      gt_i = gt_roidb[i]
+      ov = bbox_overlaps(roidb_i['boxes'].astype(np.float), 
+        gt_i['boxes'].astype(np.float))
       
-      #this maintains the last index for each image for each category
-      for classlabel in range(self.numclasses):
+      # this maintains the last index for each image for each category
+      for classlabel in range(self.num_classes):
         self.data_percateg[classlabel]['im_end_index'].append(self.data_percateg[classlabel]['im_end_index'][-1])
       
       #for every gt
-      for j in range(len(self.gt['classes'][i])):
-        idx = ov[:,j]>=self._params.ovthresh
+      for j in range(len(gt_i['gt_classes'])): 
+        idx = ov[:,j] >= self._params.ov_thresh
         if not np.any(idx):
           continue
+        
         #save the boxes
-        classlabel = self.gt['classes'][i][j]
+        classlabel = gt_i['classes'][j]
         self.data_percateg[classlabel]['boxids'].extend(np.where(idx)[0].tolist())
         self.data_percateg[classlabel]['imids'].extend([i]*np.sum(idx))
         self.data_percateg[classlabel]['instids'].extend([j]*np.sum(idx))
         self.data_percateg[classlabel]['im_end_index'][-1] += np.sum(idx)
+
     #convert everything to a np array because python is an ass
-    for j in range(self.numclasses):
+    for j in range(self.num_classes):
       self.data_percateg[j]['boxids']=np.array(self.data_percateg[j]['boxids'])
       self.data_percateg[j]['imids']=np.array(self.data_percateg[j]['imids'])
       self.data_percateg[j]['instids']=np.array(self.data_percateg[j]['instids'])
@@ -98,26 +101,31 @@ class HypercolumnDataLayer(caffe.Layer):
 
   def reshape(self, bottom, top):
     #sample a category
-    categid = np.random.choice(self.numclasses)
+    categid = np.random.choice(self.num_classes)
     #sample an image for this category
     imid = self.data_percateg[categid]['imids'][np.random.choice(len(self.data_percateg[categid]['imids']))]
+
+    roidb_i = self._roidb[imid]
+    gt_i = self._gt_roidb[imid]
     
-    img = cv2.imread(self._params.imgpath.format(self.names[imid]))
+    img = cv2.imread(imdb.image_path_at(imid)[0])
 
     #get all possibilities for this category
     start = self.data_percateg[categid]['im_end_index'][imid]+1
     stop = self.data_percateg[categid]['im_end_index'][imid+1]
+    
     #pick a box
-    idx = np.random.choice(np.arange(start,stop+1), cfg.TRAIN_SAMPLES_PER_IMG)
+    idx = np.random.choice(np.arange(start,stop+1), self._params.train_samples_per_img)
     boxid = self.data_percateg[categid]['boxids'][idx]
-    boxes = self.boxes[imid][boxid,:]-1    
+    boxes = roidb_i[imid][boxid,:]-1    
 
     instid = self.data_percateg[categid]['instids'][idx]
+
     #load the gt
-    [inst, categories] = sbd.load_gt(self.names[imid])
-    masks = np.zeros((idx.size, 1,inst.shape[0],inst.shape[1]))
+    inst = gt_i[imid]['inst_segm']
+    masks = np.zeros((idx.size, 1, inst.shape[0], inst.shape[1]))
     for k in range(idx.size):
-      masks[k,0,:,:] = (inst==instid[k]+1).astype(np.float32)
+      masks[k,0,:,:] = (inst == gt_i['instance_id'][instid[k]]).astype(np.float32)
     categids = categid*np.ones(idx.size)
 
     #get the blobs
