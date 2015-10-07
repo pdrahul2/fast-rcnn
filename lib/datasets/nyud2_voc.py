@@ -154,6 +154,19 @@ class nyud2_voc(datasets.imdb):
             box_list.append(boxes[ind[0]][:, (1, 0, 3, 2)] - 1)
 
         return self.create_roidb_from_box_list(box_list, gt_roidb)
+    
+    def _attach_instance_segmentation(self):
+        gt_roidb = self.gt_roidb()
+        # Load the instance segmentations from the directory and add to the structure
+        import pdb
+        pdb.set_trace() #Tracer()
+        for i in range(len(self._image_index)):
+            index                 =  self._image_index[i]
+            gt_i                  =  gt_roidb[i]
+            filename              =  os.path.join(self._devkit_path, 'benchmarkData', 'groundTruth', index + '.mat')
+            raw_data              =  sio.loadmat(filename)
+            instance_segmentation =  1*raw_data['groundTruth'][0][0]['Segmentation'][0][0].astype(np.uint16)
+            gt_i['inst_segm']     =  instance_segmentation
 
     def _load_nyud2_annotation(self, index):
         """
