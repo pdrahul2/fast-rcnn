@@ -1,17 +1,17 @@
 import numpy as np
 import cv2
-import sds_config as cfg
+from fast_rcnn.config import cfg
 
 def get_resized_image(image):
   im = image.astype(np.float32, copy=True)
   im_shape = im.shape
   im_size_min = np.min(im_shape[0:2])
   im_size_max = np.max(im_shape[0:2])
-  target_size = cfg.TARGET_SIZE
+  target_size = cfg.SDS.TARGET_SIZE
   target_scale = float(target_size)/float(im_size_min)
   max_size_after_resize = np.round(im_size_max*target_scale)
-  if max_size_after_resize>cfg.MAX_SIZE:
-    target_scale = float(cfg.MAX_SIZE)/float(im_size_max)
+  if max_size_after_resize>cfg.SDS.MAX_SIZE:
+    target_scale = float(cfg.SDS.MAX_SIZE)/float(im_size_max)
   im_new = cv2.resize(im, None, None, fx=target_scale, fy=target_scale, 
                          interpolation=cv2.INTER_LINEAR)
   im_new -= cfg.PIXEL_MEANS
@@ -24,7 +24,7 @@ def get_resized_image(image):
 def get_boxes_for_spp(boxes, scale_factors):
   num_boxes = boxes.shape[0]
   #the boxes snapped to the feature map
-  spp_boxes = np.round(np.divide(np.multiply(boxes, scale_factors[[1,0,1,0]]), cfg.FEAT_SCALE))
+  spp_boxes = np.round(np.divide(np.multiply(boxes, scale_factors[[1,0,1,0]]), cfg.SDS.FEAT_SCALE))
   spp_boxes = np.hstack((np.zeros((num_boxes,1), spp_boxes.dtype), spp_boxes))
   return spp_boxes
 
@@ -38,7 +38,7 @@ def get_normalized_boxes(boxes, categids, im_shape):
   return normalized_boxes
 
 def get_clipped_resized_masks(boxes, input_masks):
-  target_size = cfg.MASK_SIZE
+  target_size = cfg.SDS.MASK_SIZE
   num_boxes = boxes.shape[0]
   num_channels = input_masks.shape[1]
   #masks = cymask.clip_resize_mask(sp, reg2sp, boxes, target_size)
