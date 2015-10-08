@@ -4,11 +4,10 @@ import numpy as np
 import numpy.random as npr
 import argparse, pprint
 import pickle
-from prepare_blobs import get_blobs
-import sbd
+from sds.prepare_blobs import get_blobs
+import lib.datasets
 import os
 from utils.cython_bbox import bbox_overlaps
-import sds_config as cfg
 
 def get_box_overlap(box_1, box_2):
   box1 = box_1.copy().astype(np.float32)
@@ -38,24 +37,19 @@ class HypercolumnDataLayer(caffe.Layer):
     pprint.pprint(args)
     return args
 
-
-
-
   def setup(self, bottom, top):
     self._params = self._parse_args(self.param_str_)
     imdb          = lib.datasets.factory.get_imdb(self._params.imdb_name)
     gt_roidb      = imdb.gt_roidb();
     roidb         = imdb.roidb;
+    imdb._attach_instance_segmentation();
+    
     self._imdb    = imdb
     self._roidb   = roidb;
-    self.gt_roidb = gt_roidb;
-    imdb._attach_instance_segmentation;
-
-    self.gt['classes'] = [x-1 for x in self.gt['classes']]
-
+    self._gt_roidb = gt_roidb;
 
     #how many categories are there?
-    self.num_classes = self._params.num_classes + 1
+    self.num_classes = self._params.num_classes
     
     #initialize
     self.data_percateg = []
@@ -63,7 +57,7 @@ class HypercolumnDataLayer(caffe.Layer):
       self.data_percateg.append({'boxids':[],'imids':[],'instids':[], 'im_end_index':[-1]})
 
     # compute all overlaps and pick boxes that have greater than threshold overlap
-    for i in range(len(imdb.num_images)): 
+    for i in range(imdb.num_images): 
       roidb_i = roidb[i]
       gt_i = gt_roidb[i]
       ov = bbox_overlaps(roidb_i['boxes'].astype(np.float), 
@@ -80,7 +74,7 @@ class HypercolumnDataLayer(caffe.Layer):
           continue
         
         #save the boxes
-        classlabel = gt_i['classes'][j]
+        classlabel = gt_i['gt_classes'][j]-1
         self.data_percateg[classlabel]['boxids'].extend(np.where(idx)[0].tolist())
         self.data_percateg[classlabel]['imids'].extend([i]*np.sum(idx))
         self.data_percateg[classlabel]['instids'].extend([j]*np.sum(idx))
@@ -102,9 +96,11 @@ class HypercolumnDataLayer(caffe.Layer):
   def reshape(self, bottom, top):
     #sample a category
     categid = np.random.choice(self.num_classes)
+    
     #sample an image for this category
     imid = self.data_percateg[categid]['imids'][np.random.choice(len(self.data_percateg[categid]['imids']))]
-
+    
+    imdb = self._imdb
     roidb_i = self._roidb[imid]
     gt_i = self._gt_roidb[imid]
     
@@ -117,12 +113,16 @@ class HypercolumnDataLayer(caffe.Layer):
     #pick a box
     idx = np.random.choice(np.arange(start,stop+1), self._params.train_samples_per_img)
     boxid = self.data_percateg[categid]['boxids'][idx]
-    boxes = roidb_i[imid][boxid,:]-1    
+    boxes = roidb_i['boxes'][boxid,:]*1
+    boxes = boxes.astype(np.float32)
+    # normalize the boxes here
+    # boxes[:,[0,2]] = boxes[:,[0,2]]/img.shape[2]
+    # boxes[:,[1,3]] = boxes[:,[1,3]]/img.shape[1]
 
     instid = self.data_percateg[categid]['instids'][idx]
 
     #load the gt
-    inst = gt_i[imid]['inst_segm']
+    inst = gt_i['inst_segm']
     masks = np.zeros((idx.size, 1, inst.shape[0], inst.shape[1]))
     for k in range(idx.size):
       masks[k,0,:,:] = (inst == gt_i['instance_id'][instid[k]]).astype(np.float32)
@@ -149,7 +149,3 @@ class HypercolumnDataLayer(caffe.Layer):
 
   def backward(self, top, propagate_down, bottom):
     pass
-
-    
- 
-
