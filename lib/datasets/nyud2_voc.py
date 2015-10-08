@@ -158,8 +158,6 @@ class nyud2_voc(datasets.imdb):
     def _attach_instance_segmentation(self):
         gt_roidb = self.gt_roidb()
         # Load the instance segmentations from the directory and add to the structure
-        import pdb
-        pdb.set_trace() #Tracer()
         for i in range(len(self._image_index)):
             index                 =  self._image_index[i]
             gt_i                  =  gt_roidb[i]
