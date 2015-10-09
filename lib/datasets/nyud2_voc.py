@@ -155,6 +155,18 @@ class nyud2_voc(datasets.imdb):
 
         return self.create_roidb_from_box_list(box_list, gt_roidb)
     
+    def _sds_eval_format(self, i):
+        # for the ith image return the 
+        gt_i = self.gt_roidb()[i]
+        # make instances 1 through n, and define categories for each
+        inst_out = np.zeros_like(gt_i['inst_segm'])
+        category = np.zeros(len(gt_i['gt_classes']))
+        for i in range(len(gt_i['gt_classes'])):
+            inst_out[gt_i['inst_segm'] == gt_i['instance_id'][i]] = i+1
+            category[i] = gt_i['gt_classes'][i]
+        return inst_out, category
+
+
     def _attach_instance_segmentation(self):
         gt_roidb = self.gt_roidb()
         # Load the instance segmentations from the directory and add to the structure
