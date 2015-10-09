@@ -10,13 +10,15 @@
 """Test a Fast R-CNN network on an image database."""
 
 import _init_paths
-from fast_rcnn.test import test_net
-from fast_rcnn.config import cfg, cfg_from_file
+from fast_rcnn.test import test_net, apply_nms
+from fast_rcnn.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
 from datasets.factory import get_imdb
 import caffe
 import argparse
 import pprint
 import time, os, sys
+import sg_utils as sg_utils
+import lib.sds.test_hypercolumns as sds_test
 
 def parse_args():
     """
@@ -41,6 +43,15 @@ def parse_args():
                         default='voc_2007_test', type=str)
     parser.add_argument('--comp', dest='comp_mode', help='competition mode',
                         action='store_true')
+    parser.add_argument('--score_blob_name', default='cls_prob', type=str)
+    parser.add_argument('--bbox_blob_name', default='bbox_pred', type=str)
+    parser.add_argument('--set', dest='set_cfgs',
+                        help='set config keys', default=None,
+                        nargs=argparse.REMAINDER)
+    
+    parser.add_argument('--sds', default=0, type=int)
+    parser.add_argument('--sds_sp_dir', default=None, type=str)
+    parser.add_argument('--sds_detection_file', default=None, type=str)
 
     if len(sys.argv) == 1:
         parser.print_help()
@@ -73,4 +84,21 @@ if __name__ == '__main__':
     imdb = get_imdb(args.imdb_name)
     imdb.competition_mode(args.comp_mode)
 
-    test_net(net, imdb)
+    if args.sds > 0:
+      output_dir = os.path.join(get_output_dir(imdb, net), 'segm' + cfg.TEST.DET_SALT)
+      if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+      
+      gt_roidb = imdb.gt_roidb();
+      imdb._attach_instance_segmentation();
+
+      # load detection boxes and do nms 
+      with open(args.sds_detection_file, 'r'):
+        dt = sg_utils.load_variables(args.sds_detection_file)['all_boxes']
+      dt_nms = apply_nms(dt, 0.3)
+      dt_nms = dt_nms[1:]
+      sds_test.get_all_outputs(net, imdb, dt_nms, args.sds_sp_dir, thresh=0.4, out_dir = output_dir, 
+        do_eval = True, eval_thresh = [0.5, 0.7])
+    
+    else:
+      test_net(net, imdb, args.score_blob_name, args.bbox_blob_name)
