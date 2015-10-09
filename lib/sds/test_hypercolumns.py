@@ -2,13 +2,10 @@ import numpy as np
 import sys
 import _init_paths
 import caffe
-import cv2
+import cv2, os, time, math, evaluation
 import scipy.misc as scipymisc
-import time
 from sds.prepare_blobs import get_blobs
 import superpixel_representation as sprep
-import evaluation
-import math
 import my_accumarray as accum
 from scipy.io import savemat, loadmat
 
@@ -119,17 +116,21 @@ def paste_output_sp(output, boxes, im_shape, sp, target_output_size = [50, 50]):
   pasted_output = pasted_output/counts.reshape((1,1,-1))
   return pasted_output
  
-def get_all_outputs(net,names, dets, imgpath, sppath, regsppath,thresh=0.4,outpath=None, do_eval = True, eval_thresh = [0.5, 0.7]):
-  import sbd
-  numcategs=dets['boxes'].size
+def get_all_outputs(net, imdb, nms_boxes, sp_dir, thresh=0.4, out_dir = None, 
+  do_eval = True, eval_thresh = [0.5, 0.7]):
+  numcategs = imdb.num_classes-1
 
   if do_eval:
-    #we will accumulate the overlaps and the classes of the gt
+    import sbd
+    # we will accumulate the overlaps and the classes of the gt
     all_ov=[]
     gt = []
     for j in range(numcategs):
       all_ov.append([])
-
+  
+  ap_file = None
+  if out_dir is not None:
+    ap_file = out_dir + '_eval'
 
   #a dictionary of times
   times = {}
@@ -138,59 +139,101 @@ def get_all_outputs(net,names, dets, imgpath, sppath, regsppath,thresh=0.4,outpa
   times['sp']=0.
   times['ov']=0.
   times['total']=0.
-  for i in range(len(names)):
+  for i in range(imdb.num_images):
     t1=time.time()
-    img = cv2.imread(imgpath.format(names[i]))
+    img = cv2.imread(imdb.image_path_at(i)[0])
+    
     #get all boxes for this image
     boxes_img = np.zeros((0,4))
     cids_img = np.zeros((0,1))
     for j in range(numcategs):
-      boxes_img = np.vstack((boxes_img, dets['boxes'][j][i]))
-      cids_img = np.vstack((cids_img, j*np.ones((dets['boxes'][j][i].shape[0],1))))
+      if len(nms_boxes[j][i]) > 0:
+        boxes_img = np.vstack((boxes_img, 1*nms_boxes[j][i][:,:4]))
+        cids_img = np.vstack((cids_img, j*np.ones((nms_boxes[j][i].shape[0],1))))
+    
     t2=time.time()
     times['boxes']=times['boxes']+t2-t1
 
 
     #get the predictions
     output = get_hypercolumn_prediction(net, img, boxes_img.astype(np.float32), cids_img)
+    
     t3=time.time()
     times['pred']=times['pred']+t3-t2
+    
     #project to sp
-    (sp, reg2sp) = sprep.read_sprep(sppath.format(names[i]), regsppath.format(names[i]))
-    newreg2sp_all = paste_output_sp(output, boxes_img.astype(np.float32)-1., sp.shape, sp)
+    sp = cv2.imread(os.path.join(sp_dir, imdb.image_index[i] + '.png'), cv2.CV_16U)
+    newreg2sp_all = paste_output_sp(output, boxes_img.astype(np.float32), sp.shape, sp)
     newreg2sp_all = np.squeeze(newreg2sp_all)
-    newreg2sp_all = newreg2sp_all>=thresh
+    newreg2sp_all = newreg2sp_all >= thresh
     newreg2sp_all = newreg2sp_all.T
-    t4=time.time()
+    
+    t4 = time.time()
     times['sp'] = times['sp']+t4-t3
+    
     #save if needed
-    if outpath is not None:
-      savemat(outpath.format(names[i]), {'output':output})
+    if out_dir is not None:
+      savemat(os.path.join(out_dir, imdb.image_index[i] + '.mat'), {'output': output})
+    
     #evaluate
     if do_eval:
-      inst, categories = sbd.load_gt(names[i])
+      inst, categories = imdb._sds_eval_format(i)
+      
       ov = evaluation.compute_overlap_sprep(sp, newreg2sp_all, inst)
       #separate according to categories
       for j in range(numcategs):
         all_ov[j].append(ov[:,cids_img.reshape(-1)==j])
+      
       #append categories
       gt.append(np.squeeze(categories-1))
+    
     t5=time.time()
     times['ov'] = times['ov']+t5-t4
-    if i % 100 == 0:
+    
+    if i % 10 == 0:
       total = float(i+1)
-      print 'Doing : {:d}, get boxes:{:.2f} s, get pred:{:.2f} s, get sp:{:.2f} s, get ov:{:.2f} s'.format(i, times['boxes']/total,
-                        times['pred']/total, times['sp']/total, times['ov']/total)
+      print 'Doing : {:4d}, get boxes:{:.2f} s, get pred:{:.2f} s, get sp:{:.2f} s, get ov:{:.2f} s'.\
+        format(i, times['boxes']/total, times['pred']/total, times['sp']/total, times['ov']/total)
 
   ap = [[] for _ in eval_thresh]
   prec = [[] for _ in eval_thresh]
   rec = [[] for _ in eval_thresh]
-  for i in range(numcategs):
-    print 'Evaluating :{:d}'.format(i)
 
-    for t,thr in enumerate(eval_thresh):
-      ap_, prec_, rec_ = evaluation.generalized_det_eval_simple(dets['scores'][i].tolist()[0:len(names)], all_ov[i], gt, i, thr)
+  if ap_file is not None:
+    f = open(ap_file + '.txt', 'wt')
+
+  for i in range(numcategs):
+    for t, thr in enumerate(eval_thresh):
+      sc = []
+      for b in nms_boxes[i]:
+        if b == []:
+          sc.append(np.zeros(0))
+        else:
+          sc.append(b[:,4]*1)
+      ap_, prec_, rec_ = evaluation.generalized_det_eval_simple(sc, all_ov[i], gt, i, thr)
       ap[t].append(ap_)
       prec[t].append(prec_)
       rec[t].append(rec_)
+    
+    ap_str = '{:>20s} : {:10f}, {:10f}'.format(imdb.classes[i+1], ap[0][i]*100, ap[1][i]*100)
+    print ap_str
+    if ap_file is not None:
+      f.write(ap_str + '\n')
+  
+
+  ap_str = '{:>20s} : {:10f}, {:10f}'.format('mean', np.mean(ap[0])*100, np.mean(ap[1])*100)
+  print ap_str
+  if ap_file is not None:
+    f.write(ap_str + '\n')
+    f.close()
+  
+  if ap_file is not None:
+    import sg_utils
+    eval_file = os.path.join(ap_file + '.pkl')
+    sg_utils.save_variables(eval_file, [ap, prec, rec, imdb.classes[1:]], \
+        ['ap', 'prec', 'rec', 'classes'], overwrite = True)
+    eval_file = os.path.join(ap_file + '.mat')
+    savemat(eval_file, 
+      {'ap': ap, 'prec': prec, 'rec': rec, 'classes': imdb.classes[1:]}, 
+      do_compression = True);
   return ap, prec, rec, all_ov, gt
