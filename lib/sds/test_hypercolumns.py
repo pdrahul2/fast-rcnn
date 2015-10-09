@@ -2,17 +2,16 @@ import numpy as np
 import sys
 import _init_paths
 import caffe
-import sds_config as cfg
 import cv2
 import scipy.misc as scipymisc
 import time
-from prepare_blobs import get_blobs
-import sbd
+from sds.prepare_blobs import get_blobs
 import superpixel_representation as sprep
 import evaluation
 import math
 import my_accumarray as accum
 from scipy.io import savemat, loadmat
+
 def get_hypercolumn_prediction(net, img, boxes, categids):
   boxes = boxes.copy()
   #clip boxes to image
@@ -121,6 +120,7 @@ def paste_output_sp(output, boxes, im_shape, sp, target_output_size = [50, 50]):
   return pasted_output
  
 def get_all_outputs(net,names, dets, imgpath, sppath, regsppath,thresh=0.4,outpath=None, do_eval = True, eval_thresh = [0.5, 0.7]):
+  import sbd
   numcategs=dets['boxes'].size
 
   if do_eval:
