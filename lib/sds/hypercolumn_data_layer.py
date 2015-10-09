@@ -1,3 +1,4 @@
+import _init_paths
 import cv2
 import caffe
 import numpy as np
