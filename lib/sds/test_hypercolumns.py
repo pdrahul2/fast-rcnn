@@ -117,7 +117,7 @@ def paste_output_sp(output, boxes, im_shape, sp, target_output_size = [50, 50]):
   return pasted_output
  
 def get_all_outputs(net, imdb, nms_boxes, sp_dir, thresh=0.4, out_dir = None, 
-  do_eval = True, eval_thresh = [0.5, 0.7]):
+  do_eval = True, eval_thresh = [0.5, 0.7], save_output=False):
   numcategs = imdb.num_classes-1
 
   if do_eval:
@@ -172,7 +172,7 @@ def get_all_outputs(net, imdb, nms_boxes, sp_dir, thresh=0.4, out_dir = None,
     times['sp'] = times['sp']+t4-t3
     
     #save if needed
-    if out_dir is not None:
+    if save_output:
       savemat(os.path.join(out_dir, imdb.image_index[i] + '.mat'), {'output': output})
     
     #evaluate
