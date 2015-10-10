@@ -52,6 +52,7 @@ def parse_args():
     parser.add_argument('--sds', default=0, type=int)
     parser.add_argument('--sds_sp_dir', default=None, type=str)
     parser.add_argument('--sds_detection_file', default=None, type=str)
+    parser.add_argument('--sds_save_output', default=0, type=int)
 
     if len(sys.argv) == 1:
         parser.print_help()
@@ -68,10 +69,13 @@ if __name__ == '__main__':
 
     if args.cfg_file is not None:
         cfg_from_file(args.cfg_file)
-
+    
+    if args.set_cfgs is not None:
+        cfg_from_list(args.set_cfgs)
+  
     print('Using config:')
     pprint.pprint(cfg)
-
+    
     while not os.path.exists(args.caffemodel) and args.wait:
         print('Waiting for {} to exist...'.format(args.caffemodel))
         time.sleep(10)
@@ -97,8 +101,9 @@ if __name__ == '__main__':
         dt = sg_utils.load_variables(args.sds_detection_file)['all_boxes']
       dt_nms = apply_nms(dt, 0.3)
       dt_nms = dt_nms[1:]
-      sds_test.get_all_outputs(net, imdb, dt_nms, args.sds_sp_dir, thresh=0.4, out_dir = output_dir, 
-        do_eval = True, eval_thresh = [0.5, 0.7])
+      sds_test.get_all_outputs(net, imdb, dt_nms, args.sds_sp_dir, thresh=0.4, 
+        out_dir = output_dir, do_eval = True, eval_thresh = [0.5, 0.7], 
+        save_output=args.sds_save_output)
     
     else:
       test_net(net, imdb, args.score_blob_name, args.bbox_blob_name)
