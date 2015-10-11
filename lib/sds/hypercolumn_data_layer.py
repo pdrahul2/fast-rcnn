@@ -2,13 +2,13 @@ import _init_paths
 import cv2
 import caffe
 import numpy as np
-import numpy.random as npr
 import argparse, pprint
 import pickle
 from sds.prepare_blobs import get_blobs
 import lib.datasets
 import os
 from utils.cython_bbox import bbox_overlaps
+from fast_rcnn.config import cfg
 
 def get_box_overlap(box_1, box_2):
   box1 = box_1.copy().astype(np.float32)
@@ -33,6 +33,7 @@ class HypercolumnDataLayer(caffe.Layer):
     parser.add_argument('--ov_thresh', default=0.7, type=float)
     parser.add_argument('--train_samples_per_img', default=5, type=int)
     parser.add_argument('--num_classes', default=19, type=int)
+    parser.add_argument('--max_size', default=688, type=int)
     args = parser.parse_args(str_arg.split())
     print('Using config:')
     pprint.pprint(args)
@@ -40,6 +41,7 @@ class HypercolumnDataLayer(caffe.Layer):
 
   def setup(self, bottom, top):
     self._params = self._parse_args(self.param_str_)
+    cfg.SDS.TARGET_SIZE = self._params.max_size
     imdb          = lib.datasets.factory.get_imdb(self._params.imdb_name)
     gt_roidb      = imdb.gt_roidb();
     roidb         = imdb.roidb;
@@ -92,6 +94,7 @@ class HypercolumnDataLayer(caffe.Layer):
     self.blob_names = ['image','normalizedboxes','sppboxes','categids','labels', 'instance_wts']
     blobs=dict()
     self.myblobs=blobs
+    np.random.seed(3)
 
 
   def reshape(self, bottom, top):
