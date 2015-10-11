@@ -192,8 +192,8 @@ def get_all_outputs(net, imdb, nms_boxes, sp_dir, thresh=0.4, out_dir = None,
     
     if i % 10 == 0:
       total = float(i+1)
-      print 'Doing : {:4d}, get boxes:{:.2f} s, get pred:{:.2f} s, get sp:{:.2f} s, get ov:{:.2f} s'.\
-        format(i, times['boxes']/total, times['pred']/total, times['sp']/total, times['ov']/total)
+      print 'Doing : {:4d} / {:4d}, get boxes:{:.2f} s, get pred:{:.2f} s, get sp:{:.2f} s, get ov:{:.2f} s'.\
+        format(i, imdb.num_images, times['boxes']/total, times['pred']/total, times['sp']/total, times['ov']/total)
 
   ap = [[] for _ in eval_thresh]
   prec = [[] for _ in eval_thresh]
