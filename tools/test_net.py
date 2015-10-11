@@ -31,8 +31,7 @@ def parse_args():
                         help='prototxt file defining the network',
                         default=None, type=str)
     parser.add_argument('--net', dest='caffemodel',
-                        help='model to test',
-                        default=None, type=str)
+                        default=None, type=str, nargs='+')
     parser.add_argument('--cfg', dest='cfg_file',
                         help='optional config file', default=None, type=str)
     parser.add_argument('--wait', dest='wait',
@@ -53,7 +52,10 @@ def parse_args():
     parser.add_argument('--sds_sp_dir', default=None, type=str)
     parser.add_argument('--sds_detection_file', default=None, type=str)
     parser.add_argument('--sds_save_output', default=0, type=int)
+    parser.add_argument('--sds_img_blob_names', default=['image'], type=str, nargs='+')
+    parser.add_argument('--sds_output_blob_name', default='loss', type=str)
 
+    
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)
@@ -76,14 +78,20 @@ if __name__ == '__main__':
     print('Using config:')
     pprint.pprint(cfg)
     
-    while not os.path.exists(args.caffemodel) and args.wait:
-        print('Waiting for {} to exist...'.format(args.caffemodel))
+    for n in args.caffemodel:
+      while not os.path.exists(n) and args.wait:
+        print('Waiting for {} to exist...'.format(n))
         time.sleep(10)
 
     caffe.set_mode_gpu()
     caffe.set_device(args.gpu_id)
-    net = caffe.Net(args.prototxt, args.caffemodel, caffe.TEST)
-    net.name = os.path.splitext(os.path.basename(args.caffemodel))[0]
+
+    net = caffe.Net(args.prototxt, caffe.TEST)
+    name = []
+    for n in args.caffemodel:
+      net.copy_from(n)
+      name = name + [os.path.splitext(os.path.basename(n))[0]]
+    net.name = '+'.join(name) 
 
     imdb = get_imdb(args.imdb_name)
     imdb.competition_mode(args.comp_mode)
@@ -101,9 +109,9 @@ if __name__ == '__main__':
         dt = sg_utils.load_variables(args.sds_detection_file)['all_boxes']
       dt_nms = apply_nms(dt, 0.3)
       dt_nms = dt_nms[1:]
-      sds_test.get_all_outputs(net, imdb, dt_nms, args.sds_sp_dir, thresh=0.4, 
-        out_dir = output_dir, do_eval = True, eval_thresh = [0.5, 0.7], 
+      sds_test.get_all_outputs(net, imdb, dt_nms, args.sds_sp_dir, 
+        args.sds_img_blob_names, args.sds_output_blob_name,
+        sp_thresh=0.4, out_dir = output_dir, do_eval = True, eval_thresh = [0.5, 0.7], 
         save_output=args.sds_save_output)
-    
     else:
       test_net(net, imdb, args.score_blob_name, args.bbox_blob_name)
