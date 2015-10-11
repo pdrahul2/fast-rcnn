@@ -125,17 +125,18 @@ class nyud2_voc(datasets.imdb):
             with open(cache_file, 'rb') as fid:
                 roidb = cPickle.load(fid)
             print '{} ss roidb loaded from {}'.format(self.name, cache_file)
-            return roidb
-
-        if True:
-            gt_roidb = self.gt_roidb()
-            ss_roidb = self._load_mcg_roidb(gt_roidb)
-            roidb = datasets.imdb.merge_roidbs(gt_roidb, ss_roidb)
         else:
-            roidb = self._load_mcg_roidb(None)
-        with open(cache_file, 'wb') as fid:
-            cPickle.dump(roidb, fid, cPickle.HIGHEST_PROTOCOL)
-        print 'wrote mcg roidb to {}'.format(cache_file)
+          if True:
+              import copy
+              gt_roidb = self.gt_roidb()
+              gt_roidb_ = copy.deepcopy(gt_roidb)
+              ss_roidb = self._load_mcg_roidb(gt_roidb_)
+              roidb = datasets.imdb.merge_roidbs(gt_roidb_, ss_roidb)
+          else:
+              roidb = self._load_mcg_roidb(None)
+          with open(cache_file, 'wb') as fid:
+              cPickle.dump(roidb, fid, cPickle.HIGHEST_PROTOCOL)
+          print 'wrote mcg roidb to {}'.format(cache_file)
 
         return roidb
 
