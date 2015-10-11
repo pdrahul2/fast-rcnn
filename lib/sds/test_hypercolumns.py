@@ -9,22 +9,31 @@ import superpixel_representation as sprep
 import my_accumarray as accum
 from scipy.io import savemat, loadmat
 
-def get_hypercolumn_prediction(net, img, boxes, categids):
+def get_hypercolumn_prediction(net, imgs, boxes, categids, img_blob_names=['image'], output_blob_name='loss'):
   boxes = boxes.copy()
   #clip boxes to image
-  boxes = clip_boxes(boxes-1, img.shape) 
+  boxes = clip_boxes(boxes-1, imgs[0].shape) 
+  
+  im_new = [[] for _ in range(len(imgs))]
+  for i in range(len(imgs)):
+    im_new[i], sppboxes, normalizedboxes, categids = get_blobs(imgs[i], boxes, categids)
+  
+  # make blobs
+  blobs = {};
+  for i in range(len(imgs)):
+    blobs[img_blob_names[i]] = im_new[i]
+  blobs['normalizedboxes'] = normalizedboxes
+  blobs['sppboxes'] = sppboxes
+  blobs['categids'] = categids
 
-  im_new, spp_boxes, normalized_boxes, categids = get_blobs(img, boxes, categids)
   #reshape the network
-  net.blobs['image'].reshape(*(im_new.shape))
-  net.blobs['normalizedboxes'].reshape(*(normalized_boxes.shape))
-  net.blobs['sppboxes'].reshape(*(spp_boxes.shape))
-  net.blobs['categids'].reshape(*(categids.shape))
-
+  for blob_name in blobs.keys():
+    net.blobs[blob_name].reshape(*(blobs[blob_name].shape))
+  
   #forward
-  output_blobs = net.forward(image=im_new, normalizedboxes=normalized_boxes,sppboxes=spp_boxes, categids=categids)
-
-  output =output_blobs['loss']
+  output_blobs = net.forward(**blobs)
+  
+  output = output_blobs[output_blob_name]
   return output
 
 def clip_boxes(boxes, im_shape):
@@ -116,12 +125,14 @@ def paste_output_sp(output, boxes, im_shape, sp, target_output_size = [50, 50]):
   pasted_output = pasted_output/counts.reshape((1,1,-1))
   return pasted_output
  
-def get_all_outputs(net, imdb, nms_boxes, sp_dir, thresh=0.4, out_dir = None, 
-  do_eval = True, eval_thresh = [0.5, 0.7], save_output=False):
+def get_all_outputs(net, imdb, nms_boxes, sp_dir, 
+  img_blob_names, output_blob_name, 
+  sp_thresh=0.4, out_dir = None, do_eval = True, 
+  eval_thresh = [0.5, 0.7], save_output=False):
+
   numcategs = imdb.num_classes-1
 
   if do_eval:
-    import sbd
     # we will accumulate the overlaps and the classes of the gt
     all_ov=[]
     gt = []
@@ -141,7 +152,11 @@ def get_all_outputs(net, imdb, nms_boxes, sp_dir, thresh=0.4, out_dir = None,
   times['total']=0.
   for i in range(imdb.num_images):
     t1=time.time()
-    img = cv2.imread(imdb.image_path_at(i)[0])
+    
+    im_names = imdb.image_path_at(i)
+    imgs = []
+    for j in range(len(im_names)):
+      imgs.append(cv2.imread(imdb.image_path_at(i)[j]))
     
     #get all boxes for this image
     boxes_img = np.zeros((0,4))
@@ -156,7 +171,8 @@ def get_all_outputs(net, imdb, nms_boxes, sp_dir, thresh=0.4, out_dir = None,
 
 
     #get the predictions
-    output = get_hypercolumn_prediction(net, img, boxes_img.astype(np.float32), cids_img)
+    output = get_hypercolumn_prediction(net, imgs, boxes_img.astype(np.float32), cids_img,
+      img_blob_names=img_blob_names, output_blob_name=output_blob_name)
     
     t3=time.time()
     times['pred']=times['pred']+t3-t2
@@ -165,7 +181,7 @@ def get_all_outputs(net, imdb, nms_boxes, sp_dir, thresh=0.4, out_dir = None,
     sp = cv2.imread(os.path.join(sp_dir, imdb.image_index[i] + '.png'), cv2.CV_16U)
     newreg2sp_all = paste_output_sp(output, boxes_img.astype(np.float32), sp.shape, sp)
     newreg2sp_all = np.squeeze(newreg2sp_all)
-    newreg2sp_all = newreg2sp_all >= thresh
+    newreg2sp_all = newreg2sp_all >= sp_thresh
     newreg2sp_all = newreg2sp_all.T
     
     t4 = time.time()
