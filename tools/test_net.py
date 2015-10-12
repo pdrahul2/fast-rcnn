@@ -54,6 +54,7 @@ def parse_args():
     parser.add_argument('--sds_save_output', default=0, type=int)
     parser.add_argument('--sds_img_blob_names', default=['image'], type=str, nargs='+')
     parser.add_argument('--sds_output_blob_name', default='loss', type=str)
+    parser.add_argument('--sds_sp_thresh', default=0.4, type=float)
 
     
     if len(sys.argv) == 1:
@@ -111,7 +112,7 @@ if __name__ == '__main__':
       dt_nms = dt_nms[1:]
       sds_test.get_all_outputs(net, imdb, dt_nms, args.sds_sp_dir, 
         args.sds_img_blob_names, args.sds_output_blob_name,
-        sp_thresh=0.4, out_dir = output_dir, do_eval = True, eval_thresh = [0.5, 0.7], 
+        sp_thresh=args.sds_sp_thresh, out_dir = output_dir, do_eval = True, eval_thresh = [0.5, 0.7], 
         save_output=args.sds_save_output)
     else:
       test_net(net, imdb, args.score_blob_name, args.bbox_blob_name)
