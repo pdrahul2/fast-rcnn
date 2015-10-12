@@ -34,6 +34,7 @@ class HypercolumnDataLayer(caffe.Layer):
     parser.add_argument('--train_samples_per_img', default=5, type=int)
     parser.add_argument('--num_classes', default=19, type=int)
     parser.add_argument('--max_size', default=688, type=int)
+    parser.add_argument('--num_images', default=1, type=int)
     args = parser.parse_args(str_arg.split())
     print('Using config:')
     pprint.pprint(args)
@@ -91,9 +92,15 @@ class HypercolumnDataLayer(caffe.Layer):
 
 
     #also save a dictionary of where each blob goes to
-    self.blob_names = ['image','normalizedboxes','sppboxes','categids','labels', 'instance_wts']
-    blobs=dict()
-    self.myblobs=blobs
+    self.blob_names = ['image']
+    for i in range(1, self._params.num_images):
+      self.blob_names.append('image_{:d}'.format(i))
+    
+    self.blob_names = self.blob_names + \
+      ['normalizedboxes','sppboxes','categids','labels', 'instance_wts']
+    
+    blobs = dict()
+    self.myblobs = blobs
     np.random.seed(3)
 
 
@@ -107,8 +114,11 @@ class HypercolumnDataLayer(caffe.Layer):
     imdb = self._imdb
     roidb_i = self._roidb[imid]
     gt_i = self._gt_roidb[imid]
-    
-    img = cv2.imread(imdb.image_path_at(imid)[0])
+   
+    im_names = imdb.image_path_at(imid)
+    img = []
+    for i in range(len(im_names)):
+      img.append(cv2.imread(imdb.image_path_at(imid)[i]))
 
     #get all possibilities for this category
     start = self.data_percateg[categid]['im_end_index'][imid]+1
@@ -133,10 +143,17 @@ class HypercolumnDataLayer(caffe.Layer):
     categids = categid*np.ones(idx.size)
 
     #get the blobs
-    im_new, spp_boxes, normalized_boxes, categids, masksblob, instance_wts = get_blobs(img, boxes.astype(np.float32), categids, masks)
+    im_new = []
+    for i in range(len(img)):
+      im_new_, spp_boxes, normalized_boxes, categids, masksblob, instance_wts = \
+        get_blobs(img[i], boxes.astype(np.float32), categids, masks)
+      im_new.append(im_new_)
 
     #save blobs in private dict
-    self.myblobs['image']=im_new.astype(np.float32)
+    self.myblobs['image']=im_new[0].astype(np.float32)
+    for i in range(1, len(im_new)):
+      self.myblobs['image_{:d}'.format(i)] = im_new[i].astype(np.float32)
+
     self.myblobs['normalizedboxes']=normalized_boxes.astype(np.float32)
     self.myblobs['sppboxes']=spp_boxes.astype(np.float32)
     self.myblobs['categids']=categids.astype(np.float32)
