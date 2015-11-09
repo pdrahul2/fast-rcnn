@@ -131,7 +131,11 @@ def get_all_outputs(net, imdb, nms_boxes, sp_dir,
   eval_thresh = [0.5, 0.7], save_output=False):
 
   numcategs = imdb.num_classes-1
+  
+  if save_output:
+    nms_sds = [[[] for _ in a] for a in nms_boxes]
 
+  
   if do_eval:
     # we will accumulate the overlaps and the classes of the gt
     all_ov=[]
@@ -183,13 +187,16 @@ def get_all_outputs(net, imdb, nms_boxes, sp_dir,
     newreg2sp_all = np.squeeze(newreg2sp_all)
     newreg2sp_all = newreg2sp_all >= sp_thresh
     newreg2sp_all = newreg2sp_all.T
-    
     t4 = time.time()
     times['sp'] = times['sp']+t4-t3
     
     #save if needed
     if save_output:
-      savemat(os.path.join(out_dir, imdb.image_index[i] + '.mat'), {'output': output})
+      for j in range(numcategs):
+        ind = np.where(cids_img[:,0] == j)[0]
+        nms_sds[j][i] = (newreg2sp_all[:,ind].copy()).T
+        
+      # savemat(os.path.join(out_dir, imdb.image_index[i] + '.mat'), {'output': output})
     
     #evaluate
     if do_eval:
@@ -215,6 +222,11 @@ def get_all_outputs(net, imdb, nms_boxes, sp_dir,
   prec = [[] for _ in eval_thresh]
   rec = [[] for _ in eval_thresh]
 
+  if save_output:
+    import sg_utils
+    sds_file = os.path.join(out_dir, 'detections' + '.pkl')
+    sg_utils.save_variables(sds_file, [nms_boxes, nms_sds], ['nms_boxes', 'nms_sds'], overwrite = True)
+  
   if ap_file is not None:
     f = open(ap_file + '.txt', 'wt')
 
