@@ -131,3 +131,11 @@ def color_seg(mask, img):
   colorbg = colorbg[np.newaxis, np.newaxis,:]
   img2 = 0.5*img2 + 0.5*mask2*color + 0.5*(1.-mask2)*colorbg
   return img2.astype(np.uint8)
+
+
+def show_mask_on_image(image, mask, col, f=0.25):
+  out = image*f
+  white = [1.0,1.0,1.0]
+  for k in range(3):
+    out[:,:,k] += (1-f)*(col[k]*mask + white[k]*(1.-mask))
+  return out
