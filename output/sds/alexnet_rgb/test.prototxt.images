@@ -1,0 +1,415 @@
+name: "try"
+input: "image"
+input_shape
+{
+  dim: 1
+  dim: 3
+  dim: 227
+  dim: 227
+}
+input: "normalizedboxes"
+input_shape
+{
+  dim: 1
+  dim: 6
+  dim: 1
+  dim: 1
+}
+input: "sppboxes"
+input_shape
+{
+  dim: 1
+  dim: 5
+  dim: 1
+  dim: 1
+}
+input: "categids"
+input_shape
+{
+  dim: 1
+  dim: 1
+  dim: 1
+  dim: 1
+}
+
+layer {
+  name: "conv1"
+  type: "Convolution"
+  bottom: "image"
+  top: "conv1"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0.
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 96
+    kernel_size: 11
+    pad: 5
+    stride: 4
+  }
+}
+layer {
+  name: "relu1"
+  type: "ReLU"
+  bottom: "conv1"
+  top: "conv1"
+}
+layer {
+  name: "pool1"
+  type: "Pooling"
+  bottom: "conv1"
+  top: "pool1"
+  pooling_param {
+    pool: MAX
+    kernel_size: 3
+    pad: 1
+    stride: 2
+  }
+}
+layer {
+  name: "norm1"
+  type: "LRN"
+  bottom: "pool1"
+  top: "norm1"
+  lrn_param {
+    local_size: 5
+    alpha: 0.0001
+    beta: 0.75
+  }
+}
+layer {
+  name: "conv2"
+  type: "Convolution"
+  bottom: "norm1"
+  top: "conv2"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0.
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 256
+    kernel_size: 5
+    pad: 2
+    group: 2
+  }
+}
+layer {
+  name: "relu2"
+  type: "ReLU"
+  bottom: "conv2"
+  top: "conv2"
+}
+layer {
+  name: "pool2"
+  type: "Pooling"
+  bottom: "conv2"
+  top: "pool2"
+  pooling_param {
+    pool: MAX
+    kernel_size: 3
+    pad: 1
+    stride: 2
+  }
+}
+layer {
+  name: "norm2"
+  type: "LRN"
+  bottom: "pool2"
+  top: "norm2"
+  lrn_param {
+    local_size: 5
+    alpha: 0.0001
+    beta: 0.75
+  }
+}
+layer {
+  name: "conv3"
+  type: "Convolution"
+  bottom: "norm2"
+  top: "conv3"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0.
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 384
+    kernel_size: 3
+    pad: 1
+  }
+}
+layer {
+  name: "relu3"
+  type: "ReLU"
+  bottom: "conv3"
+  top: "conv3"
+}
+layer {
+  name: "conv4"
+  type: "Convolution"
+  bottom: "conv3"
+  top: "conv4"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0.
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 384
+    kernel_size: 3
+    pad: 1
+    group: 2
+  }
+}
+layer {
+  name: "relu4"
+  type: "ReLU"
+  bottom: "conv4"
+  top: "conv4"
+}
+layer {
+  name: "conv5"
+  type: "Convolution"
+  bottom: "conv4"
+  top: "conv5"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0.
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 256
+    kernel_size: 3
+    pad: 1
+    group: 2
+  }
+}
+layer {
+  name: "relu5"
+  type: "ReLU"
+  bottom: "conv5"
+  top: "conv5"
+}
+
+layer {
+  name: "roi_pool5"
+  type: "ROIPooling"
+  bottom: "conv5"
+  bottom: "sppboxes"
+  top: "pool5"
+  roi_pooling_param {
+    pooled_w: 6
+    pooled_h: 6
+  }
+}
+
+layer {
+  name: "fc6" type: "InnerProduct" bottom: "pool5" top: "fc6"
+  param { lr_mult: 1 decay_mult: 1 }
+  param { lr_mult: 2 decay_mult: 0 }
+  inner_product_param { num_output: 4096 }
+}
+layer {
+  name: "relu6" type: "ReLU" bottom: "fc6" top: "fc6"
+}
+layer {
+  name: "drop6" type: "Dropout" bottom: "fc6" top: "fc6"
+  dropout_param { dropout_ratio: 0.5 }
+}
+
+layer {
+  name: "fc7" type: "InnerProduct" bottom: "fc6" top: "fc7"
+  param { lr_mult: 1 decay_mult: 1 }
+  param { lr_mult: 2 decay_mult: 0 }
+  inner_product_param { num_output: 4096 }
+}
+layer {
+  name: "relu7" type: "ReLU" bottom: "fc7" top: "fc7"
+}
+
+layer {
+  name: "drop7" type: "Dropout" bottom: "fc7" top: "fc7"
+  dropout_param { dropout_ratio: 0.5 }
+}
+
+# ####Hypercolumn layers####
+layer {
+  name: "scale_pool2"
+  type: "Scale"
+  bottom: "pool2"
+  top: "spool2"
+  scale_param {
+    scale: 0.0074
+  }
+}
+layer {
+  name: "scale_conv4"
+  type: "Scale"
+  bottom: "conv4"
+  top: "sconv4"
+  scale_param {
+    scale: 0.0909
+  }
+}
+layer {
+  name: "conv_pool2" 
+  type: "Convolution"
+  bottom: "spool2"
+  top: "conv_pool2"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 475
+    pad: 1
+    kernel_size: 3
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "conv_conv4" 
+  type: "Convolution"
+  bottom: "sconv4"
+  top: "conv_conv4"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 475
+    pad: 0
+    kernel_size: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "fcfc7" 
+  type: "InnerProduct"
+  bottom: "fc7"
+  top: "fcfc7"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 475
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "ups_pool2"
+  type: "BoxUpsample"
+  bottom: "conv_pool2"
+  bottom: "normalizedboxes"
+  top: "ups_pool2"
+  box_upsample_param {
+    width: 50
+    height: 50
+    channels: 25
+  }
+}
+layer {
+  name: "ups_conv4"
+  type: "BoxUpsample"
+  bottom: "conv_conv4"
+  bottom: "normalizedboxes"
+  top: "ups_conv4"
+  box_upsample_param {
+    width: 50
+    height: 50
+    channels: 25
+  }
+}
+layer {
+  name: "slice_fc7"
+  type: "PickSlice"
+  bottom: "fcfc7"
+  bottom: "categids"
+  top: "fcfc7out"
+  pick_slice_param {
+    channels: 25
+  }
+}
+layer {
+  name: "repmat"
+  type: "RepMat"
+  bottom: "fcfc7out"
+  top: "ups_fc7"
+  repmat_param{
+    rep_n: 1
+    rep_c: 1
+    rep_w: 50
+    rep_h: 50
+  }
+}
+layer {
+  name: "sum"
+  type: "Sum"
+  bottom: "ups_pool2"
+  bottom: "ups_conv4"
+  bottom: "ups_fc7"
+  top: "sum"
+}
+
+layer {
+  name: "grid"
+  type: "LocallyConnected"
+  bottom: "sum"
+  top: "loss"
+  local_layer_param {
+    grid_size: 5
+    pos_loss_wt: 1
+    neg_loss_wt: 1
+  }
+}
