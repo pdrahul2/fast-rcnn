@@ -87,6 +87,8 @@ __C.SDS.TARGET_SIZE = 600
 __C.SDS.MAX_SIZE = 1000
 __C.SDS.FEAT_SCALE = 16
 __C.SDS.MASK_SIZE = 50
+__C.SDS.DET_SALT = ''
+__C.SDS.EVAL_SALT = ''
 
 #
 # Testing options
