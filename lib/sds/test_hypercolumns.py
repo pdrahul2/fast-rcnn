@@ -223,7 +223,7 @@ def get_all_outputs(net, imdb, nms_boxes, sp_dir,
   rec = [[] for _ in eval_thresh]
 
   if save_output:
-    import sg_utils
+    import general_utils as sg_utils 
     sds_file = os.path.join(out_dir, 'detections' + '.pkl')
     sg_utils.save_variables(sds_file, [nms_boxes, nms_sds], ['nms_boxes', 'nms_sds'], overwrite = True)
   
@@ -256,7 +256,7 @@ def get_all_outputs(net, imdb, nms_boxes, sp_dir,
     f.close()
   
   if ap_file is not None:
-    import sg_utils
+    import general_utils as sg_utils 
     eval_file = os.path.join(ap_file + '.pkl')
     sg_utils.save_variables(eval_file, [ap, prec, rec, imdb.classes[1:]], \
         ['ap', 'prec', 'rec', 'classes'], overwrite = True)
