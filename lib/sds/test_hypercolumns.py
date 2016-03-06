@@ -126,7 +126,7 @@ def paste_output_sp(output, boxes, im_shape, sp, target_output_size = [50, 50]):
   return pasted_output
  
 def get_all_outputs(net, imdb, nms_boxes, sp_dir, 
-  img_blob_names, output_blob_name, 
+  img_blob_names, output_blob_name, det_salt='', eval_salt='', 
   sp_thresh=0.4, out_dir = None, do_eval = True, 
   eval_thresh = [0.5, 0.7], save_output=False):
 
@@ -224,11 +224,11 @@ def get_all_outputs(net, imdb, nms_boxes, sp_dir,
 
   if save_output:
     import general_utils as sg_utils 
-    sds_file = os.path.join(out_dir, 'detections' + '.pkl')
+    sds_file = os.path.join(out_dir, 'detections' + det_salt + '.pkl')
     sg_utils.save_variables(sds_file, [nms_boxes, nms_sds], ['nms_boxes', 'nms_sds'], overwrite = True)
   
   if ap_file is not None:
-    f = open(ap_file + '.txt', 'wt')
+    f = open(ap_file + det_salt + eval_salt + '.txt', 'wt')
 
   for i in range(numcategs):
     for t, thr in enumerate(eval_thresh):
@@ -257,10 +257,10 @@ def get_all_outputs(net, imdb, nms_boxes, sp_dir,
   
   if ap_file is not None:
     import general_utils as sg_utils 
-    eval_file = os.path.join(ap_file + '.pkl')
+    eval_file = os.path.join(ap_file + det_salt + eval_salt + '.pkl')
     sg_utils.save_variables(eval_file, [ap, prec, rec, imdb.classes[1:]], \
         ['ap', 'prec', 'rec', 'classes'], overwrite = True)
-    eval_file = os.path.join(ap_file + '.mat')
+    eval_file = os.path.join(ap_file + det_salt + eval_salt + '.mat')
     savemat(eval_file, 
       {'ap': ap, 'prec': prec, 'rec': rec, 'classes': imdb.classes[1:]}, 
       do_compression = True);
