@@ -17,8 +17,8 @@ import caffe
 import argparse
 import pprint
 import time, os, sys
-import sg_utils as sg_utils
-import lib.sds.test_hypercolumns as sds_test
+import general_utils as sg_utils
+import sds.test_hypercolumns as sds_test
 
 def parse_args():
     """
