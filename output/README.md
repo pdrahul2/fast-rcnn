@@ -26,4 +26,18 @@ training_demo/alexnet_hha
 training_demo/alexnet_rgb
 training_demo/vgg_rgb_alexnet_hha
 training_demo/vgg_rgb
+
+# Pretrained SDS models
+sds/alexnet_hha               
+sds/alexnet_rgb
+sds/alexnet_rgb_alexnet_hha
+sds/vgg_rgb
+sds/vgg_rgb_alexnet_hha
+
+# Prototxt for training various SDS models
+sds/training_demo/alexnet_rgb_alexnet_hha
+sds/training_demo/alexnet_hha
+sds/training_demo/alexnet_rgb
+sds/training_demo/vgg_rgb_alexnet_hha
+sds/training_demo/vgg_rgb
 ```
