@@ -1,0 +1,15 @@
+# net: "output/sds/training_demo/alexnet_rgb/train.prototxt"
+net: "output/sds/training_demo/vgg_rgb/train.prototxt"
+base_lr: 0.001
+lr_policy: "step"
+gamma: 0.1
+stepsize: 20000
+display: 20 
+max_iter: 10000
+momentum: 0.9
+weight_decay: 0.001
+snapshot: 2500
+iter_size: 20
+snapshot_prefix: "output/sds/training_demo/vgg_rgb/nyud2_images_2015_trainval/inst_segm"
+solver_mode: GPU
+#debug_info: true

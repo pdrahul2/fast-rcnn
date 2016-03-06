@@ -1,0 +1,401 @@
+name: "try"
+layer {
+  name: "data"
+  type: "Python"
+  top: "image"
+  top: "normalizedboxes"
+  top: "sppboxes"
+  top: "categids"
+  top: "labels"
+  top: "instance_wts"
+  python_param {
+    module: "lib.sds.hypercolumn_data_layer"
+    layer: "HypercolumnDataLayer"
+    param_str: '--imdb_name nyud2_hha_2015_trainval --max_size 688'
+  }
+}
+
+layer {
+  name: "da_conv1"
+  type: "Convolution"
+  bottom: "image"
+  top: "da_conv1"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0.
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 96
+    kernel_size: 11
+    pad: 5
+    stride: 4
+  }
+}
+layer {
+  name: "da_relu1"
+  type: "ReLU"
+  bottom: "da_conv1"
+  top: "da_conv1"
+}
+layer {
+  name: "da_pool1"
+  type: "Pooling"
+  bottom: "da_conv1"
+  top: "da_pool1"
+  pooling_param {
+    pool: MAX
+    kernel_size: 3
+    pad: 1
+    stride: 2
+  }
+}
+layer {
+  name: "da_norm1"
+  type: "LRN"
+  bottom: "da_pool1"
+  top: "da_norm1"
+  lrn_param {
+    local_size: 5
+    alpha: 0.0001
+    beta: 0.75
+  }
+}
+layer {
+  name: "da_conv2"
+  type: "Convolution"
+  bottom: "da_norm1"
+  top: "da_conv2"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0.
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 256
+    kernel_size: 5
+    pad: 2
+    group: 2
+  }
+}
+layer {
+  name: "da_relu2"
+  type: "ReLU"
+  bottom: "da_conv2"
+  top: "da_conv2"
+}
+layer {
+  name: "da_pool2"
+  type: "Pooling"
+  bottom: "da_conv2"
+  top: "da_pool2"
+  pooling_param {
+    pool: MAX
+    kernel_size: 3
+    pad: 1
+    stride: 2
+  }
+}
+layer {
+  name: "da_norm2"
+  type: "LRN"
+  bottom: "da_pool2"
+  top: "da_norm2"
+  lrn_param {
+    local_size: 5
+    alpha: 0.0001
+    beta: 0.75
+  }
+}
+layer {
+  name: "da_conv3"
+  type: "Convolution"
+  bottom: "da_norm2"
+  top: "da_conv3"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0.
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 384
+    kernel_size: 3
+    pad: 1
+  }
+}
+layer {
+  name: "da_relu3"
+  type: "ReLU"
+  bottom: "da_conv3"
+  top: "da_conv3"
+}
+layer {
+  name: "da_conv4"
+  type: "Convolution"
+  bottom: "da_conv3"
+  top: "da_conv4"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0.
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 384
+    kernel_size: 3
+    pad: 1
+    group: 2
+  }
+}
+layer {
+  name: "da_relu4"
+  type: "ReLU"
+  bottom: "da_conv4"
+  top: "da_conv4"
+}
+layer {
+  name: "da_conv5"
+  type: "Convolution"
+  bottom: "da_conv4"
+  top: "da_conv5"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0.
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 256
+    kernel_size: 3
+    pad: 1
+    group: 2
+  }
+}
+layer {
+  name: "da_relu5"
+  type: "ReLU"
+  bottom: "da_conv5"
+  top: "da_conv5"
+}
+
+layer {
+  name: "da_roi_pool5"
+  type: "ROIPooling"
+  bottom: "da_conv5"
+  bottom: "sppboxes"
+  top: "da_pool5"
+  roi_pooling_param {
+    pooled_w: 6
+    pooled_h: 6
+  }
+}
+
+layer {
+  name: "da_fc6" type: "InnerProduct" bottom: "da_pool5" top: "da_fc6"
+  param { lr_mult: 0 decay_mult: 0 }
+  param { lr_mult: 0 decay_mult: 0 }
+  inner_product_param { num_output: 4096 }
+}
+layer {
+  name: "da_relu6" type: "ReLU" bottom: "da_fc6" top: "da_fc6"
+}
+layer {
+  name: "da_drop6" type: "Dropout" bottom: "da_fc6" top: "da_fc6"
+  dropout_param { dropout_ratio: 0.5 }
+}
+
+layer {
+  name: "da_fc7" type: "InnerProduct" bottom: "da_fc6" top: "da_fc7"
+  param { lr_mult: 0 decay_mult: 0 }
+  param { lr_mult: 0 decay_mult: 0 }
+  inner_product_param { num_output: 4096 }
+}
+layer {
+  name: "da_relu7" type: "ReLU" bottom: "da_fc7" top: "da_fc7"
+}
+
+layer {
+  name: "da_drop7" type: "Dropout" bottom: "da_fc7" top: "da_fc7"
+  dropout_param { dropout_ratio: 0.5 }
+}
+
+# ####Hypercolumn layers####
+layer {
+  name: "da_scale_pool2"
+  type: "Scale"
+  bottom: "da_pool2"
+  top: "da_spool2"
+  scale_param {
+    scale: 0.0074
+  }
+}
+layer {
+  name: "da_scale_conv4"
+  type: "Scale"
+  bottom: "da_conv4"
+  top: "da_sconv4"
+  scale_param {
+    scale: 0.0909
+  }
+}
+layer {
+  name: "da_conv_pool2" 
+  type: "Convolution"
+  bottom: "da_spool2"
+  top: "da_conv_pool2"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 475
+    pad: 1
+    kernel_size: 3
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "da_conv_conv4" 
+  type: "Convolution"
+  bottom: "da_sconv4"
+  top: "da_conv_conv4"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 475
+    pad: 0
+    kernel_size: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "da_fcfc7" 
+  type: "InnerProduct"
+  bottom: "da_fc7"
+  top: "da_fcfc7"
+  param {
+    lr_mult: .1
+    decay_mult: .1
+  }
+  param {
+    lr_mult: .2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 475
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "da_ups_pool2"
+  type: "BoxUpsample"
+  bottom: "da_conv_pool2"
+  bottom: "normalizedboxes"
+  top: "da_ups_pool2"
+  box_upsample_param {
+    width: 50
+    height: 50
+    channels: 25
+  }
+}
+layer {
+  name: "da_ups_conv4"
+  type: "BoxUpsample"
+  bottom: "da_conv_conv4"
+  bottom: "normalizedboxes"
+  top: "da_ups_conv4"
+  box_upsample_param {
+    width: 50
+    height: 50
+    channels: 25
+  }
+}
+layer {
+  name: "da_slice_fc7"
+  type: "PickSlice"
+  bottom: "da_fcfc7"
+  bottom: "categids"
+  top: "da_fcfc7out"
+  pick_slice_param {
+    channels: 25
+  }
+}
+layer {
+  name: "da_repmat"
+  type: "RepMat"
+  bottom: "da_fcfc7out"
+  top: "da_ups_fc7"
+  repmat_param{
+    rep_n: 1
+    rep_c: 1
+    rep_w: 50
+    rep_h: 50
+  }
+}
+layer {
+  name: "da_sum"
+  type: "Sum"
+  bottom: "da_ups_pool2"
+  bottom: "da_ups_conv4"
+  bottom: "da_ups_fc7"
+  top: "da_sum"
+}
+layer {
+  name: "da_grid"
+  type: "LocallyConnectedWithLoss"
+  bottom: "da_sum"
+  bottom: "labels"
+  bottom: "instance_wts"
+  top: "da_loss"
+  local_layer_param {
+    grid_size: 5
+    pos_loss_wt: 1
+    neg_loss_wt: 1
+  }
+  loss_weight: 1
+}
+
