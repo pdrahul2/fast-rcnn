@@ -73,7 +73,7 @@ If you find this code base and models useful in your research, please consider c
 1. Clone the repository
   ```Shell
   # Clone the python code
-  git clone git@github.com:s-gupta/fast-rcnn.git
+  git clone https://github.com/s-gupta/fast-rcnn.git
   git checkout sds-distillation
   ```
   We'll call the directory that you cloned Fast R-CNN into `FRCN_ROOT`. 
