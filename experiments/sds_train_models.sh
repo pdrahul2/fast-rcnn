@@ -1,3 +1,6 @@
+# This script needs to use caffe-sds. Uncomment appropriately in _init_paths.py
+
+
 # Train the RGB Alexnet model finetuning from the alexnet rgb model finetuned for detection
 PYTHONUNBUFFERED="True" PYTHONPATH=:.:caffe-sds/build/python/ GLOG_logtostderr=1 \
 caffe-sds/build/tools/caffe.bin train \

@@ -1,3 +1,5 @@
+# This script needs to use caffe-fast-rcnn. Uncomment appropriately in _init_paths.py
+
 set -x
 tr_set='trainval'
 test_set='test'

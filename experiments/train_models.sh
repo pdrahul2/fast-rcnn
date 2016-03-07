@@ -1,3 +1,6 @@
+# This script needs to use caffe-fast-rcnn. Uncomment appropriately in _init_paths.py
+
+
 # Train the HHA Alexnet model from the supervision transfer initialization weights
 PYTHONPATH='.' PYTHONUNBUFFERED="True" python tools/train_net.py --gpu 0 \
   --solver output/training_demo/alexnet_hha/solver.prototxt.hha \
