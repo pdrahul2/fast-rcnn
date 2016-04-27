@@ -20,9 +20,9 @@ def net_surgery(net, json_file_or_dict):
 
     # For each item in the json file load the network and copy the layers
     for src_desc in source_description:
-        caffe.set_logging_level(1)
+        # caffe.set_logging_level(1)
         net_source = caffe.Net(src_desc['prototxt'], src_desc['model'], caffe.TEST)
-        caffe.set_logging_level(0)
+        # caffe.set_logging_level(0)
         for j in xrange(len(src_desc['copy_ops']['dest'])):
             dest_name = src_desc['copy_ops']['dest'][j]
             
