@@ -119,7 +119,7 @@ If you find this code base and models useful in your research, please consider c
 
   ```Shell
   cd $FRCN_ROOT
-  ./outputs/scripts/fetch_nyud2_detectors.sh
+  ./output/scripts/fetch_nyud2_detectors.sh
   ```
 
 ### Usage
